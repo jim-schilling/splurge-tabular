@@ -4,8 +4,9 @@ Unit tests for splurge_tabular.common_utils module.
 Tests core utility functions for data validation and safe operations.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from splurge_tabular.common_utils import (
     batch_validate_rows,
@@ -22,7 +23,7 @@ from splurge_tabular.common_utils import (
     validate_data_structure,
     validate_string_parameters,
 )
-from splurge_tabular.exceptions import SplurgeParameterError, SplurgeValidationError
+from splurge_tabular.exceptions import SplurgeTypeError, SplurgeValidationError, SplurgeValueError
 
 
 class TestSafeFileOperation:
@@ -43,7 +44,7 @@ class TestSafeFileOperation:
 
     def test_invalid_type(self):
         """Test with invalid type."""
-        with pytest.raises(SplurgeParameterError) as exc_info:
+        with pytest.raises(SplurgeTypeError) as exc_info:
             safe_file_operation(123)
 
         assert "file_path must be a string or Path object" in str(exc_info.value)
@@ -51,7 +52,7 @@ class TestSafeFileOperation:
 
     def test_none_value(self):
         """Test with None value."""
-        with pytest.raises(SplurgeParameterError) as exc_info:
+        with pytest.raises(SplurgeTypeError) as exc_info:
             safe_file_operation(None)
 
         assert "file_path must be a string or Path object" in str(exc_info.value)
@@ -69,7 +70,7 @@ class TestSafeIndexAccess:
     def test_index_out_of_range_positive(self):
         """Test index out of range (positive)."""
         data = ["a", "b", "c"]
-        with pytest.raises(SplurgeParameterError) as exc_info:
+        with pytest.raises(SplurgeValueError) as exc_info:
             safe_index_access(data, 5)
 
         assert "item index 5 out of range" in str(exc_info.value)
@@ -78,7 +79,7 @@ class TestSafeIndexAccess:
     def test_index_out_of_range_negative(self):
         """Test index out of range (negative)."""
         data = ["a", "b", "c"]
-        with pytest.raises(SplurgeParameterError) as exc_info:
+        with pytest.raises(SplurgeValueError) as exc_info:
             safe_index_access(data, -5)
 
         assert "item index -5 out of range" in str(exc_info.value)
@@ -87,7 +88,7 @@ class TestSafeIndexAccess:
     def test_empty_list(self):
         """Test accessing index in empty list."""
         data = []
-        with pytest.raises(SplurgeParameterError) as exc_info:
+        with pytest.raises(SplurgeValueError) as exc_info:
             safe_index_access(data, 0)
 
         assert "item index 0 out of range" in str(exc_info.value)
@@ -112,7 +113,7 @@ class TestSafeDictAccess:
     def test_missing_key_without_default(self):
         """Test accessing missing key without default."""
         data = {"name": "John"}
-        with pytest.raises(SplurgeParameterError) as exc_info:
+        with pytest.raises(SplurgeValueError) as exc_info:
             safe_dict_access(data, "age")
 
         assert "key 'age' not found" in str(exc_info.value)
@@ -142,7 +143,7 @@ class TestValidateDataStructure:
     def test_invalid_type(self):
         """Test validating with wrong type."""
         data = "not a list"
-        with pytest.raises(SplurgeParameterError) as exc_info:
+        with pytest.raises(SplurgeTypeError) as exc_info:
             validate_data_structure(data, expected_type=list, param_name="test_data")
 
         assert "test_data must be list, got str" in str(exc_info.value)
@@ -166,7 +167,7 @@ class TestValidateDataStructure:
     def test_custom_param_name(self):
         """Test with custom parameter name."""
         data = "not a list"
-        with pytest.raises(SplurgeParameterError) as exc_info:
+        with pytest.raises(SplurgeTypeError) as exc_info:
             validate_data_structure(data, expected_type=list, param_name="my_param")
 
         assert "my_param must be list, got str" in str(exc_info.value)
@@ -294,47 +295,47 @@ class TestCreateParameterValidator:
 
     def test_valid_parameters(self):
         """Test validation of valid parameters."""
+
         def validate_name(value):
             if not isinstance(value, str) or not value.strip():
-                raise SplurgeParameterError("name must be non-empty string")
+                raise SplurgeValueError("name must be non-empty string")
             return value
 
         def validate_age(value):
             if not isinstance(value, int) or value < 0:
-                raise SplurgeParameterError("age must be non-negative integer")
+                raise SplurgeValueError("age must be non-negative integer")
             return value
 
-        validator = create_parameter_validator({
-            'name': validate_name,
-            'age': validate_age
-        })
-        params = {'name': 'John', 'age': 25}
+        validator = create_parameter_validator({"name": validate_name, "age": validate_age})
+        params = {"name": "John", "age": 25}
         result = validator(params)
         assert result == params
 
     def test_invalid_parameter(self):
         """Test validation with invalid parameter."""
+
         def validate_age(value):
             if not isinstance(value, int) or value < 0:
-                raise SplurgeParameterError("age must be non-negative integer")
+                raise SplurgeValueError("age must be non-negative integer")
             return value
 
-        validator = create_parameter_validator({'age': validate_age})
-        params = {'age': 'not an int'}
-        with pytest.raises(SplurgeParameterError) as exc_info:
+        validator = create_parameter_validator({"age": validate_age})
+        params = {"age": "not an int"}
+        with pytest.raises(SplurgeValueError) as exc_info:
             validator(params)
 
         assert "age must be non-negative integer" in str(exc_info.value)
 
     def test_missing_parameter(self):
         """Test with missing parameter (should not raise error)."""
+
         def validate_name(value):
             if not isinstance(value, str) or not value.strip():
-                raise SplurgeParameterError("name must be non-empty string")
+                raise SplurgeValueError("name must be non-empty string")
             return value
 
-        validator = create_parameter_validator({'name': validate_name})
-        params = {'other_param': 'value'}
+        validator = create_parameter_validator({"name": validate_name})
+        params = {"other_param": "value"}
         result = validator(params)
         assert result == {}
 
@@ -351,7 +352,7 @@ class TestBatchValidateRows:
     def test_invalid_row_type(self):
         """Test validation with invalid row type."""
         rows = [["a", "b"], "not a list", ["e", "f"]]
-        with pytest.raises(SplurgeValidationError) as exc_info:
+        with pytest.raises(SplurgeTypeError) as exc_info:
             list(batch_validate_rows(rows))
 
         assert "Row 1 must be a list" in str(exc_info.value)
@@ -388,22 +389,14 @@ class TestCreateErrorContext:
     def test_full_error_context(self):
         """Test error context with all parameters."""
         context = create_error_context(
-            "data validation",
-            file_path="data.csv",
-            row_number=5,
-            column_name="email",
-            additional_info="invalid format"
+            "data validation", file_path="data.csv", row_number=5, column_name="email", additional_info="invalid format"
         )
         expected = "Operation: data validation | File: data.csv | Row: 5 | Column: email | Info: invalid format"
         assert context == expected
 
     def test_partial_error_context(self):
         """Test error context with some parameters."""
-        context = create_error_context(
-            "parsing",
-            file_path="test.txt",
-            row_number=10
-        )
+        context = create_error_context("parsing", file_path="test.txt", row_number=10)
         expected = "Operation: parsing | File: test.txt | Row: 10"
         assert context == expected
 
@@ -481,28 +474,28 @@ class TestValidateStringParameters:
 
     def test_none_value_not_allowed(self):
         """Test None value when not allowed."""
-        with pytest.raises(SplurgeParameterError) as exc_info:
+        with pytest.raises(SplurgeTypeError) as exc_info:
             validate_string_parameters(None, "test_param", allow_none=False)
 
         assert "test_param cannot be None" in str(exc_info.value)
 
     def test_empty_string_not_allowed(self):
         """Test empty string when not allowed."""
-        with pytest.raises(SplurgeParameterError) as exc_info:
+        with pytest.raises(SplurgeValueError) as exc_info:
             validate_string_parameters("", "test_param", allow_empty=False)
 
         assert "test_param cannot be empty" in str(exc_info.value)
 
     def test_min_length_validation(self):
         """Test minimum length validation."""
-        with pytest.raises(SplurgeParameterError) as exc_info:
+        with pytest.raises(SplurgeValueError) as exc_info:
             validate_string_parameters("hi", "test_param", min_length=5)
 
         assert "test_param must be at least 5 characters long" in str(exc_info.value)
 
     def test_max_length_validation(self):
         """Test maximum length validation."""
-        with pytest.raises(SplurgeParameterError) as exc_info:
+        with pytest.raises(SplurgeValueError) as exc_info:
             validate_string_parameters("this is too long", "test_param", max_length=10)
 
         assert "test_param must be at most 10 characters long" in str(exc_info.value)

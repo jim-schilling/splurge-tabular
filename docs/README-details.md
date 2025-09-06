@@ -20,7 +20,7 @@ splurge-tabular is a modern Python library for tabular data processing that prov
 - **Type Safety**: Full type annotations
 - **Error Resilience**: Comprehensive exception handling
 - **High Performance**: Optimized for various data sizes
-- **Production Ready**: 88% test coverage, modern packaging
+- **Production Ready**: 95% test coverage, modern packaging
 
 ## Installation
 
@@ -430,10 +430,10 @@ python -m pytest tests/e2e/ -v
 
 ### Test Coverage
 
-- **Unit Tests**: 148 tests covering individual components
+- **Unit Tests**: 172 tests covering individual components
 - **Integration Tests**: 13 tests for component interactions
 - **E2E Tests**: 12 tests for complete workflows
-- **Total Coverage**: 88% across all code
+- **Total Coverage**: 95% across all code
 
 ### Writing Tests
 

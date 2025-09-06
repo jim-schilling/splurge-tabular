@@ -4,8 +4,6 @@ Unit tests for splurge_tabular.tabular_utils module.
 Tests header processing, row normalization, and utility functions.
 """
 
-import pytest
-
 from splurge_tabular.tabular_utils import (
     auto_column_names,
     normalize_rows,
@@ -27,10 +25,7 @@ class TestProcessHeaders:
 
     def test_multiple_header_rows(self):
         """Test processing multiple header rows with merging."""
-        header_data = [
-            ["Personal", "Personal", "Location"],
-            ["Name", "Age", "City"]
-        ]
+        header_data = [["Personal", "Personal", "Location"], ["Name", "Age", "City"]]
         processed, column_names = process_headers(header_data, header_rows=2)
 
         assert processed == [["Personal_Name", "Personal_Age", "Location_City"]]
@@ -70,10 +65,7 @@ class TestProcessHeaders:
 
     def test_irregular_header_lengths(self):
         """Test handling of irregular header row lengths."""
-        header_data = [
-            ["A", "B"],
-            ["C", "D", "E"]
-        ]
+        header_data = [["A", "B"], ["C", "D", "E"]]
         processed, column_names = process_headers(header_data, header_rows=1)
 
         # Should return original data unchanged for single header row

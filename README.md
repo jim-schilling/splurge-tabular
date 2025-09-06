@@ -2,8 +2,8 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-173%20passed-green.svg)](https://github.com/jim-schilling/splurge-tabular)
-[![Coverage](https://img.shields.io/badge/coverage-88%25-green.svg)](https://github.com/jim-schilling/splurge-tabular)
+[![Tests](https://img.shields.io/badge/tests-197%20passed-green.svg)](https://github.com/jim-schilling/splurge-tabular)
+[![Coverage](https://img.shields.io/badge/coverage-95%25-green.svg)](https://github.com/jim-schilling/splurge-tabular)
 
 A modern, high-performance Python library for tabular data processing with both in-memory and streaming capabilities.
 
@@ -14,7 +14,7 @@ A modern, high-performance Python library for tabular data processing with both 
 - **Robust Error Handling**: Comprehensive exception hierarchy with detailed error messages
 - **Flexible Data Input**: Support for CSV, JSON, and custom data formats
 - **High Performance**: Optimized for both small datasets and large-scale processing
-- **Production Ready**: 88% test coverage with 173 comprehensive tests
+- **Production Ready**: 95% test coverage with 197 comprehensive tests
 - **Modern Packaging**: Built with modern Python standards and best practices
 
 ## 🚀 Quick Start

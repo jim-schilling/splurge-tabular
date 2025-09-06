@@ -1,5 +1,4 @@
-"""
-Protocol definitions for splurge-tools package.
+"""Protocol definitions for splurge-tabular package.
 
 This module defines Protocol classes that establish contracts for common interfaces
 used throughout the package. These protocols enable better type checking and
@@ -13,15 +12,14 @@ This module is licensed under the MIT License.
 """
 
 from collections.abc import Generator, Iterator
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from splurge_typer.data_type import DataType
 
 
 @runtime_checkable
 class TabularDataProtocol(Protocol):
-    """
-    Protocol for tabular data models.
+    """Protocol for tabular data models.
 
     This protocol defines the interface that all tabular data models should implement,
     ensuring consistent behavior across different implementations.
@@ -29,78 +27,205 @@ class TabularDataProtocol(Protocol):
 
     @property
     def column_names(self) -> list[str]:
-        """Get the list of column names."""
+        """Get the list of column names.
+
+        Returns:
+            List of column names in order.
+        """
         ...
 
     @property
     def row_count(self) -> int:
-        """Get the number of data rows."""
+        """Get the number of data rows.
+
+        Returns:
+            Number of rows in the dataset.
+        """
         ...
 
     @property
     def column_count(self) -> int:
-        """Get the number of columns."""
+        """Get the number of columns.
+
+        Returns:
+            Number of columns in the dataset.
+        """
         ...
 
     def column_index(self, name: str) -> int:
-        """Get the index of a column by name."""
+        """Get the index of a column by name.
+
+        Args:
+            name: Column name to find.
+
+        Returns:
+            Zero-based index of the column.
+        """
         ...
 
     def column_type(self, name: str) -> DataType:
-        """Get the inferred data type of a column."""
+        """Get the inferred data type of a column.
+
+        Args:
+            name: Column name.
+
+        Returns:
+            Inferred data type for the column.
+        """
         ...
 
     def column_values(self, name: str) -> list[str]:
-        """Get all values for a specific column."""
+        """Get all values for a specific column.
+
+        Args:
+            name: Column name.
+
+        Returns:
+            List of all values in the column.
+        """
         ...
 
     def cell_value(self, name: str, row_index: int) -> str:
-        """Get the value of a specific cell."""
+        """Get the value of a specific cell.
+
+        Args:
+            name: Column name.
+            row_index: Zero-based row index.
+
+        Returns:
+            Value at the specified cell.
+        """
         ...
 
     def row(self, index: int) -> dict[str, str]:
-        """Get a row as a dictionary."""
+        """Get a row as a dictionary.
+
+        Args:
+            index: Zero-based row index.
+
+        Returns:
+            Row data as a dictionary with column names as keys.
+        """
         ...
 
     def row_as_list(self, index: int) -> list[str]:
-        """Get a row as a list."""
+        """Get a row as a list.
+
+        Args:
+            index: Zero-based row index.
+
+        Returns:
+            Row data as a list of values.
+        """
         ...
 
     def row_as_tuple(self, index: int) -> tuple[str, ...]:
-        """Get a row as a tuple."""
+        """Get a row as a tuple.
+
+        Args:
+            index: Zero-based row index.
+
+        Returns:
+            Row data as a tuple of values.
+        """
         ...
 
     def __iter__(self) -> Iterator[list[str]]:
-        """Iterate over rows as lists."""
+        """Iterate over rows as lists.
+
+        Returns:
+            Iterator yielding rows as lists of strings.
+        """
         ...
 
     def iter_rows(self) -> Generator[dict[str, str], None, None]:
-        """Iterate over rows as dictionaries."""
+        """Iterate over rows as dictionaries.
+
+        Returns:
+            Generator yielding rows as dictionaries with column names as keys.
+        """
         ...
 
     def iter_rows_as_tuples(self) -> Generator[tuple[str, ...], None, None]:
-        """Iterate over rows as tuples."""
+        """Iterate over rows as tuples.
+
+        Returns:
+            Generator yielding rows as tuples of values.
+        """
         ...
 
 
 @runtime_checkable
 class StreamingTabularDataProtocol(Protocol):
-    """Unified minimal interface for streaming data models."""
+    """Protocol for streaming tabular data models.
+
+    This protocol defines the minimal interface for streaming data models that
+    process data without loading everything into memory.
+    """
 
     @property
-    def column_names(self) -> list[str]: ...
+    def column_names(self) -> list[str]:
+        """Get the list of column names.
+
+        Returns:
+            List of column names in order.
+        """
+        ...
 
     @property
-    def column_count(self) -> int: ...
+    def column_count(self) -> int:
+        """Get the number of columns.
 
-    def column_index(self, name: str) -> int: ...
+        Returns:
+            Number of columns in the dataset.
+        """
+        ...
 
-    def __iter__(self) -> Iterator[list[str]]: ...
+    def column_index(self, name: str) -> int:
+        """Get the index of a column by name.
 
-    def iter_rows(self) -> Generator[dict[str, str], None, None]: ...
+        Args:
+            name: Column name to find.
 
-    def iter_rows_as_tuples(self) -> Generator[tuple[str, ...], None, None]: ...
+        Returns:
+            Zero-based index of the column.
+        """
+        ...
 
-    def clear_buffer(self) -> None: ...
+    def __iter__(self) -> Iterator[list[str]]:
+        """Iterate over rows as lists.
 
-    def reset_stream(self) -> None: ...
+        Returns:
+            Iterator yielding rows as lists of strings.
+        """
+        ...
+
+    def iter_rows(self) -> Generator[dict[str, str], None, None]:
+        """Iterate over rows as dictionaries.
+
+        Returns:
+            Generator yielding rows as dictionaries with column names as keys.
+        """
+        ...
+
+    def iter_rows_as_tuples(self) -> Generator[tuple[str, ...], None, None]:
+        """Iterate over rows as tuples.
+
+        Returns:
+            Generator yielding rows as tuples of values.
+        """
+        ...
+
+    def clear_buffer(self) -> None:
+        """Clear any buffered data.
+
+        This method should clear any internal buffers used for streaming data.
+        """
+        ...
+
+    def reset_stream(self) -> None:
+        """Reset the stream to the beginning.
+
+        This method should reset the stream position to allow re-reading from the start.
+        """
+        ...

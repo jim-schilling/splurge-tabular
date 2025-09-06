@@ -7,21 +7,18 @@ from start to finish, ensuring the package works correctly in real-world scenari
 import json
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List
 
 import pytest
 
 from splurge_tabular import (
-    TabularDataModel,
+    SplurgeError,
+    SplurgeValidationError,
     StreamingTabularDataModel,
+    TabularDataModel,
     ensure_minimum_columns,
     normalize_rows,
     process_headers,
-    safe_file_operation,
     validate_data_structure,
-    SplurgeError,
-    SplurgeValidationError,
-    SplurgeFileError,
 )
 
 
@@ -36,7 +33,7 @@ John,25,New York
 Jane,30,London
 Bob,35,Paris"""
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
             f.write(csv_data)
             csv_path = f.name
 
@@ -45,9 +42,9 @@ Bob,35,Paris"""
             result = Path(csv_path).read_text()
 
             # Parse CSV (simplified parsing for test)
-            lines = result.split('\n')
-            headers = lines[0].split(',')
-            rows = [line.split(',') for line in lines[1:] if line.strip()]
+            lines = result.split("\n")
+            headers = lines[0].split(",")
+            rows = [line.split(",") for line in lines[1:] if line.strip()]
 
             # Process headers
             processed_header_data, column_names = process_headers([headers], header_rows=1)
@@ -65,8 +62,8 @@ Bob,35,Paris"""
             # Validate final result
             assert len(model.column_names) == 3
             assert model.row_count == 3
-            assert model.column_names == ['name', 'age', 'city']
-            assert list(model)[0] == ['John', '25', 'New York']
+            assert model.column_names == ["name", "age", "city"]
+            assert list(model)[0] == ["John", "25", "New York"]
 
         finally:
             Path(csv_path).unlink()
@@ -76,10 +73,10 @@ Bob,35,Paris"""
         json_data = [
             {"name": "John", "age": 25, "city": "New York"},
             {"name": "Jane", "age": 30, "city": "London"},
-            {"name": "Bob", "age": 35, "city": "Paris"}
+            {"name": "Bob", "age": 35, "city": "Paris"},
         ]
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(json_data, f)
             json_path = f.name
 
@@ -90,7 +87,7 @@ Bob,35,Paris"""
             # Convert to tabular format
             if isinstance(result, list) and result:
                 headers = list(result[0].keys())
-                rows = [[str(item.get(h, '')) for h in headers] for item in result]
+                rows = [[str(item.get(h, "")) for h in headers] for item in result]
 
                 # Process through pipeline
                 processed_header_data, column_names = process_headers([headers], header_rows=1)
@@ -102,7 +99,7 @@ Bob,35,Paris"""
 
                 assert len(model.column_names) == 3
                 assert model.row_count == 3
-                assert model.column_names == ['name', 'age', 'city']
+                assert model.column_names == ["name", "age", "city"]
 
         finally:
             Path(json_path).unlink()
@@ -110,9 +107,9 @@ Bob,35,Paris"""
     def test_large_dataset_streaming_processing(self) -> None:
         """Test processing of large datasets using streaming model."""
         # Create large dataset
-        headers = ['col1', 'col2', 'col3', 'col4', 'col5']
+        headers = ["col1", "col2", "col3", "col4", "col5"]
         large_rows = [
-            [f'row{i}_val{j}' for j in range(5)]
+            [f"row{i}_val{j}" for j in range(5)]
             for i in range(1000)  # 1000 rows
         ]
 
@@ -158,12 +155,12 @@ Bob,35,Paris"""
 
     def test_memory_vs_streaming_model_comparison(self) -> None:
         """Compare memory and streaming models for the same data."""
-        headers = ['name', 'value', 'category']
+        headers = ["name", "value", "category"]
         rows = [
-            ['item1', '100', 'A'],
-            ['item2', '200', 'B'],
-            ['item3', '300', 'A'],
-            ['item4', '400', 'C'],
+            ["item1", "100", "A"],
+            ["item2", "200", "B"],
+            ["item3", "300", "A"],
+            ["item4", "400", "C"],
         ]
 
         # Create both models
@@ -180,7 +177,7 @@ Bob,35,Paris"""
         streaming_rows = list(streaming_model)
 
         assert len(memory_rows) == len(streaming_rows)
-        for mem_row, stream_row in zip(memory_rows, streaming_rows):
+        for mem_row, stream_row in zip(memory_rows, streaming_rows, strict=False):
             assert mem_row == stream_row
 
         # Test dict iteration consistency
@@ -191,7 +188,7 @@ Bob,35,Paris"""
         streaming_dicts = list(streaming_model2.iter_rows())
 
         assert len(memory_dicts) == len(streaming_dicts)
-        for mem_dict, stream_dict in zip(memory_dicts, streaming_dicts):
+        for mem_dict, stream_dict in zip(memory_dicts, streaming_dicts, strict=False):
             assert mem_dict == stream_dict
 
     def test_data_transformation_pipeline(self) -> None:
@@ -222,7 +219,7 @@ Bob,35,Paris"""
         model = TabularDataModel([headers] + normalized_rows)
 
         # Verify transformations
-        assert model.column_names == ['name', 'age', 'city']
+        assert model.column_names == ["name", "age", "city"]
         assert model.row_count == 3
         rows_list = list(model)
         assert rows_list[2][1] == "0"  # Missing age filled
@@ -236,9 +233,9 @@ Widget B,29.99,Tools
 Widget C,9.99,Books"""
 
         # Parse CSV
-        lines = csv_data.strip().split('\n')
-        headers = lines[0].split(',')
-        rows = [line.split(',') for line in lines[1:]]
+        lines = csv_data.strip().split("\n")
+        headers = lines[0].split(",")
+        rows = [line.split(",") for line in lines[1:]]
 
         # Create model
         model = TabularDataModel([headers] + rows)
@@ -247,14 +244,14 @@ Widget C,9.99,Books"""
         json_data = []
         for row_dict in model.iter_rows():
             # Convert price to float
-            row_dict['price'] = float(row_dict['price'])
+            row_dict["price"] = float(row_dict["price"])
             json_data.append(row_dict)
 
         # Validate JSON structure
         assert len(json_data) == 3
-        assert json_data[0]['product'] == 'Widget A'
-        assert json_data[0]['price'] == 19.99
-        assert json_data[0]['category'] == 'Electronics'
+        assert json_data[0]["product"] == "Widget A"
+        assert json_data[0]["price"] == 19.99
+        assert json_data[0]["category"] == "Electronics"
 
     def test_batch_processing_workflow(self) -> None:
         """Test processing multiple files in batch."""
@@ -267,14 +264,14 @@ Widget C,9.99,Books"""
         ]
 
         for i in range(3):
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
                 # Modify data slightly for each file
                 modified_rows = base_data.copy()
                 modified_rows[1][1] = str(100 * (i + 1))  # Different values
                 modified_rows[2][1] = str(200 * (i + 1))
 
                 for row in modified_rows:
-                    f.write(','.join(row) + '\n')
+                    f.write(",".join(row) + "\n")
 
                 test_files.append(f.name)
 
@@ -284,9 +281,9 @@ Widget C,9.99,Books"""
             for file_path in test_files:
                 content = Path(file_path).read_text()
 
-                lines = content.strip().split('\n')
-                headers = lines[0].split(',')
-                rows = [line.split(',') for line in lines[1:]]
+                lines = content.strip().split("\n")
+                headers = lines[0].split(",")
+                rows = [line.split(",") for line in lines[1:]]
 
                 model = TabularDataModel([headers] + rows)
                 results.append(model)
@@ -314,9 +311,9 @@ class TestPerformanceScenarios:
     def test_large_file_processing_memory_usage(self) -> None:
         """Test memory usage with large datasets."""
         # Create moderately large dataset
-        headers = [f'col_{i}' for i in range(10)]
+        headers = [f"col_{i}" for i in range(10)]
         large_rows = [
-            [f'row_{row}_col_{col}' for col in range(10)]
+            [f"row_{row}_col_{col}" for col in range(10)]
             for row in range(5000)  # 5000 rows
         ]
 
@@ -333,15 +330,15 @@ class TestPerformanceScenarios:
         last_row = all_rows[-1]
         middle_row = all_rows[2500]
 
-        assert first_row[0] == 'row_0_col_0'
-        assert last_row[0] == 'row_4999_col_0'
-        assert middle_row[0] == 'row_2500_col_0'
+        assert first_row[0] == "row_0_col_0"
+        assert last_row[0] == "row_4999_col_0"
+        assert middle_row[0] == "row_2500_col_0"
 
     def test_streaming_model_memory_efficiency(self) -> None:
         """Test that streaming model handles large data efficiently."""
-        headers = ['a', 'b', 'c']
+        headers = ["a", "b", "c"]
         # Create data that would be memory intensive if loaded all at once
-        large_rows = [[f'val_{i}_{j}' for j in range(3)] for i in range(10000)]
+        large_rows = [[f"val_{i}_{j}" for j in range(3)] for i in range(10000)]
 
         streaming_model = StreamingTabularDataModel(iter([[headers] + large_rows]))
 
@@ -380,8 +377,8 @@ class TestErrorRecoveryWorkflows:
         try:
             # Create temporary files
             for data in files_data:
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
-                    f.write('\n'.join(data))
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+                    f.write("\n".join(data))
                     temp_files.append(f.name)
 
             # Process files with error handling
@@ -392,9 +389,9 @@ class TestErrorRecoveryWorkflows:
                 try:
                     content = Path(file_path).read_text()
 
-                    lines = content.strip().split('\n')
-                    headers = lines[0].split(',')
-                    rows = [line.split(',') for line in lines[1:]]
+                    lines = content.strip().split("\n")
+                    headers = lines[0].split(",")
+                    rows = [line.split(",") for line in lines[1:]]
 
                     # Try to convert values to numbers (this will fail for invalid data)
                     for row in rows:
@@ -413,7 +410,7 @@ class TestErrorRecoveryWorkflows:
             # Check successful models
             for model in successful_models:
                 assert len(list(model)) == 2
-                assert model.column_names == ['id', 'value']
+                assert model.column_names == ["id", "value"]
 
         finally:
             for file_path in temp_files:
@@ -434,7 +431,7 @@ class TestErrorRecoveryWorkflows:
         ]
 
         for corrupted_data in corrupted_scenarios:
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
                 f.write(corrupted_data)
                 temp_path = f.name
 
@@ -443,10 +440,10 @@ class TestErrorRecoveryWorkflows:
                 content = Path(temp_path).read_text()
 
                 if content.strip():  # Not empty
-                    lines = content.strip().split('\n')
+                    lines = content.strip().split("\n")
                     if len(lines) > 1:
-                        headers = lines[0].split(',')
-                        rows = [line.split(',') for line in lines[1:] if line]
+                        _headers = lines[0].split(",")
+                        rows = [line.split(",") for line in lines[1:] if line]
 
                         # This should either succeed or fail gracefully
                         try:

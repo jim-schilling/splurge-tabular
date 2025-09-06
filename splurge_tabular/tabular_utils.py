@@ -1,8 +1,13 @@
-"""
-Shared utilities for tabular data processing.
+"""Shared utilities for tabular data processing.
 
 This module centralizes header processing, row normalization, and helpers used
 by in-memory and streaming tabular data models.
+
+Copyright (c) 2025 Jim Schilling
+
+Please preserve this header and all related material when sharing!
+
+This module is licensed under the MIT License.
 """
 
 from __future__ import annotations
@@ -59,7 +64,15 @@ def normalize_rows(
     *,
     skip_empty_rows: bool,
 ) -> list[list[str]]:
-    """Normalize rows to equal length and optionally drop empty rows."""
+    """Normalize rows to equal length and optionally drop empty rows.
+
+    Args:
+        rows: List of rows to normalize.
+        skip_empty_rows: Whether to skip rows that are empty or contain only whitespace.
+
+    Returns:
+        List of normalized rows with equal length.
+    """
     if not rows:
         return []
 
@@ -77,10 +90,24 @@ def normalize_rows(
 
 
 def should_skip_row(row: list[str]) -> bool:
-    """Return True if row is considered empty."""
+    """Check if a row should be skipped because it is empty.
+
+    Args:
+        row: Row to check.
+
+    Returns:
+        True if the row is empty or contains only whitespace.
+    """
     return all(cell.strip() == "" for cell in row)
 
 
 def auto_column_names(count: int) -> list[str]:
-    """Generate default column names column_0..column_{count-1}."""
+    """Generate default column names.
+
+    Args:
+        count: Number of column names to generate.
+
+    Returns:
+        List of default column names in format "column_0", "column_1", etc.
+    """
     return [f"column_{i}" for i in range(count)]

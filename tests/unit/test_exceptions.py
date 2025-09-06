@@ -4,16 +4,21 @@ Unit tests for splurge_tabular.exceptions module.
 Tests the custom exception hierarchy and error message formatting.
 """
 
-import pytest
-
 from splurge_tabular.exceptions import (
+    SplurgeColumnError,
+    SplurgeEncodingError,
     SplurgeError,
     SplurgeFileError,
     SplurgeFileNotFoundError,
     SplurgeFilePermissionError,
-    SplurgeParameterError,
-    SplurgeRangeError,
+    SplurgeIndexError,
+    SplurgeKeyError,
+    SplurgeRowError,
+    SplurgeSchemaError,
+    SplurgeStreamError,
+    SplurgeTypeError,
     SplurgeValidationError,
+    SplurgeValueError,
 )
 
 
@@ -40,20 +45,20 @@ class TestSplurgeError:
         assert isinstance(error, Exception)
 
 
-class TestSplurgeParameterError:
-    """Test SplurgeParameterError class."""
+class TestSplurgeTypeError:
+    """Test SplurgeTypeError class."""
 
-    def test_parameter_error_creation(self):
-        """Test creating a parameter error."""
-        error = SplurgeParameterError("Invalid parameter")
-        assert str(error) == "Invalid parameter"
+    def test_type_error_creation(self):
+        """Test creating a type error."""
+        error = SplurgeTypeError("Invalid type")
+        assert str(error) == "Invalid type"
         assert isinstance(error, SplurgeError)
         assert isinstance(error, Exception)
 
-    def test_parameter_error_with_details(self):
-        """Test parameter error with details."""
-        error = SplurgeParameterError("Invalid parameter", details="Expected int, got str")
-        assert str(error) == "Invalid parameter (Details: Expected int, got str)"
+    def test_type_error_with_details(self):
+        """Test type error with details."""
+        error = SplurgeTypeError("Invalid type", details="Expected int, got str")
+        assert str(error) == "Invalid type (Details: Expected int, got str)"
 
 
 class TestSplurgeValidationError:
@@ -71,19 +76,19 @@ class TestSplurgeValidationError:
         assert str(error) == "Schema validation failed (Details: Missing required field)"
 
 
-class TestSplurgeRangeError:
-    """Test SplurgeRangeError class."""
+class TestSplurgeValueError:
+    """Test SplurgeValueError class."""
 
-    def test_range_error_creation(self):
-        """Test creating a range error."""
-        error = SplurgeRangeError("Index out of range")
-        assert str(error) == "Index out of range"
+    def test_value_error_creation(self):
+        """Test creating a value error."""
+        error = SplurgeValueError("Invalid value")
+        assert str(error) == "Invalid value"
         assert isinstance(error, SplurgeError)
 
-    def test_range_error_with_details(self):
-        """Test range error with details."""
-        error = SplurgeRangeError("Index out of range", details="Index 5, max 3")
-        assert str(error) == "Index out of range (Details: Index 5, max 3)"
+    def test_value_error_with_details(self):
+        """Test value error with details."""
+        error = SplurgeValueError("Invalid value", details="Value out of range")
+        assert str(error) == "Invalid value (Details: Value out of range)"
 
 
 class TestSplurgeFileError:
@@ -139,9 +144,16 @@ class TestExceptionHierarchy:
     def test_all_exceptions_inherit_from_splurge_error(self):
         """Test that all custom exceptions inherit from SplurgeError."""
         exceptions = [
-            SplurgeParameterError("test"),
+            SplurgeTypeError("test"),
+            SplurgeValueError("test"),
+            SplurgeKeyError("test"),
+            SplurgeIndexError("test"),
+            SplurgeColumnError("test"),
+            SplurgeRowError("test"),
             SplurgeValidationError("test"),
-            SplurgeRangeError("test"),
+            SplurgeSchemaError("test"),
+            SplurgeStreamError("test"),
+            SplurgeEncodingError("test"),
             SplurgeFileError("test"),
             SplurgeFileNotFoundError("test"),
             SplurgeFilePermissionError("test"),

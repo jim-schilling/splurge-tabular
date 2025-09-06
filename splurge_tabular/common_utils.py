@@ -1,5 +1,4 @@
-"""
-Common utility functions for splurge-tools package.
+"""Common utility functions for splurge-tabular package.
 
 This module provides reusable utility functions and patterns to reduce
 code duplication across the package.
@@ -15,14 +14,19 @@ from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
 from typing import Any, TypeVar
 
-from splurge_tabular.exceptions import SplurgeParameterError, SplurgeValidationError
+from splurge_tabular.exceptions import (
+    SplurgeColumnError,
+    SplurgeIndexError,
+    SplurgeKeyError,
+    SplurgeTypeError,
+    SplurgeValidationError,
+    SplurgeValueError,
+)
 
 T = TypeVar("T")
 
 
-def safe_file_operation(
-    file_path: str | Path
-) -> Path:
+def safe_file_operation(file_path: str | Path) -> Path:
     """
     Safely validate and convert file path with consistent error handling.
 
@@ -40,7 +44,7 @@ def safe_file_operation(
     """
     if not isinstance(file_path, str | Path):
         msg = f"file_path must be a string or Path object, got {type(file_path).__name__}"
-        raise SplurgeParameterError(
+        raise SplurgeTypeError(
             msg,
             details=f"Expected str or Path, received: {type(file_path).__name__}",
         )
@@ -49,10 +53,10 @@ def safe_file_operation(
         path = Path(file_path)
     except (TypeError, ValueError) as e:
         msg = f"file_path is not a valid path: {file_path}"
-        raise SplurgeParameterError(
+        raise SplurgeTypeError(
             msg,
             details=str(e),
-        )
+        ) from e
 
     return path
 
@@ -123,20 +127,19 @@ def safe_index_access(
     item_name: str = "item",
     default: T | None = None,
 ) -> T:
-    """
-    Safely access list item by index with helpful error messages.
+    """Safely access list item by index with helpful error messages.
 
     Args:
-        items: List to access
-        index: Index to access
-        item_name: Name of items for error messages
-        default: Default value if index out of range (if None, raises error)
+        items: List to access.
+        index: Index to access.
+        item_name: Name of items for error messages.
+        default: Default value if index out of range (if None, raises error).
 
     Returns:
-        Item at index or default value
+        Item at index or default value.
 
     Raises:
-        SplurgeParameterError: If index is out of range and no default
+        SplurgeIndexError: If index is out of range and no default provided.
     """
     if 0 <= index < len(items):
         return items[index]
@@ -145,7 +148,7 @@ def safe_index_access(
         return default
 
     msg = f"{item_name} index {index} out of range"
-    raise SplurgeParameterError(
+    raise SplurgeIndexError(
         msg,
         details=f"Valid range: 0 to {len(items) - 1}, got {index}",
     )
@@ -158,20 +161,19 @@ def safe_dict_access(
     item_name: str = "key",
     default: T | None = None,
 ) -> T:
-    """
-    Safely access dictionary value by key with helpful error messages.
+    """Safely access dictionary value by key with helpful error messages.
 
     Args:
-        data: Dictionary to access
-        key: Key to access
-        item_name: Name of items for error messages
-        default: Default value if key not found (if None, raises error)
+        data: Dictionary to access.
+        key: Key to access.
+        item_name: Name of items for error messages.
+        default: Default value if key not found (if None, raises error).
 
     Returns:
-        Value for key or default value
+        Value for key or default value.
 
     Raises:
-        SplurgeParameterError: If key not found and no default
+        SplurgeKeyError: If key not found and no default provided.
     """
     if key in data:
         return data[key]
@@ -185,10 +187,16 @@ def safe_dict_access(
         key_hint += f" (and {len(data) - 5} more)"
 
     msg = f"{item_name} '{key}' not found"
-    raise SplurgeParameterError(
-        msg,
-        details=key_hint,
-    )
+    if item_name == "column":
+        raise SplurgeColumnError(
+            msg,
+            details=key_hint,
+        )
+    else:
+        raise SplurgeKeyError(
+            msg,
+            details=key_hint,
+        )
 
 
 def validate_data_structure(
@@ -211,19 +219,19 @@ def validate_data_structure(
         Validated data
 
     Raises:
-        SplurgeParameterError: If data is wrong type
+        SplurgeTypeError: If data is wrong type
         SplurgeValidationError: If data is empty and not allowed
     """
     if data is None:
         msg = f"{param_name} cannot be None"
-        raise SplurgeParameterError(
+        raise SplurgeTypeError(
             msg,
             details=f"Expected {expected_type.__name__}, got None",
         )
 
     if not isinstance(data, expected_type):
         msg = f"{param_name} must be {expected_type.__name__}, got {type(data).__name__}"
-        raise SplurgeParameterError(
+        raise SplurgeTypeError(
             msg,
             details=f"Expected {expected_type.__name__}, received: {type(data).__name__}",
         )
@@ -252,8 +260,8 @@ def create_parameter_validator(
 
     Example:
         validator = create_parameter_validator({
-            'name': lambda x: x if isinstance(x, str) and x.strip() else raise SplurgeParameterError("name must be non-empty string"),
-            'age': lambda x: x if isinstance(x, int) and x >= 0 else raise SplurgeParameterError("age must be non-negative integer")
+            'name': lambda x: x if isinstance(x, str) and x.strip() else raise SplurgeValueError("name must be non-empty string"),
+            'age': lambda x: x if isinstance(x, int) and x >= 0 else raise SplurgeValueError("age must be non-negative integer")
         })
         validated = validator({'name': 'John', 'age': 25})
     """
@@ -288,7 +296,7 @@ def batch_validate_rows(
         Validated and normalized rows
 
     Raises:
-        SplurgeValidationError: If row validation fails
+        SplurgeTypeError: If row validation fails
     """
     for row_idx, row in enumerate(rows):
         # Skip empty rows if requested
@@ -298,7 +306,7 @@ def batch_validate_rows(
         # Validate row is list of strings
         if not isinstance(row, list):
             msg = f"Row {row_idx} must be a list, got {type(row).__name__}"
-            raise SplurgeValidationError(
+            raise SplurgeTypeError(
                 msg,
                 details="Each row must be a list of strings",
             )
@@ -461,12 +469,12 @@ def validate_string_parameters(
         Validated string value
 
     Raises:
-        SplurgeParameterError: If validation fails
+        SplurgeTypeError: If validation fails
     """
     if value is None:
         if not allow_none:
             msg = f"{param_name} cannot be None"
-            raise SplurgeParameterError(
+            raise SplurgeTypeError(
                 msg,
                 details="None values are not allowed for this parameter",
             )
@@ -474,28 +482,28 @@ def validate_string_parameters(
 
     if not isinstance(value, str):
         msg = f"{param_name} must be a string, got {type(value).__name__}"
-        raise SplurgeParameterError(
+        raise SplurgeTypeError(
             msg,
             details=f"Expected string, received: {value!r}",
         )
 
     if not value and not allow_empty:
         msg = f"{param_name} cannot be empty"
-        raise SplurgeParameterError(
+        raise SplurgeValueError(
             msg,
             details="Empty strings are not allowed for this parameter",
         )
 
     if min_length is not None and len(value) < min_length:
         msg = f"{param_name} must be at least {min_length} characters long"
-        raise SplurgeParameterError(
+        raise SplurgeValueError(
             msg,
             details=f"Got {len(value)} characters, minimum required: {min_length}",
         )
 
     if max_length is not None and len(value) > max_length:
         msg = f"{param_name} must be at most {max_length} characters long"
-        raise SplurgeParameterError(
+        raise SplurgeValueError(
             msg,
             details=f"Got {len(value)} characters, maximum allowed: {max_length}",
         )

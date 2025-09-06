@@ -1,5 +1,4 @@
-"""
-Splurge Tabular Library
+"""Splurge Tabular Library.
 
 A Python library for tabular data processing with in-memory and streaming support.
 
@@ -15,24 +14,32 @@ from __future__ import annotations
 __version__ = "2025.0.0"
 
 # Main classes
-from splurge_tabular.tabular_data_model import TabularDataModel
-from splurge_tabular.streaming_tabular_data_model import StreamingTabularDataModel
-
-# Protocols
-from splurge_tabular.protocols import TabularDataProtocol, StreamingTabularDataProtocol
-
 # Utility functions
-from splurge_tabular.common_utils import safe_file_operation, validate_data_structure, ensure_minimum_columns
-from splurge_tabular.tabular_utils import process_headers, normalize_rows
+from splurge_tabular.common_utils import ensure_minimum_columns, safe_file_operation, validate_data_structure
 
 # Exceptions
 from splurge_tabular.exceptions import (
+    SplurgeColumnError,
+    SplurgeEncodingError,
     SplurgeError,
-    SplurgeParameterError,
-    SplurgeValidationError,
     SplurgeFileError,
-    SplurgeRangeError,
+    SplurgeFileNotFoundError,
+    SplurgeFilePermissionError,
+    SplurgeIndexError,
+    SplurgeKeyError,
+    SplurgeRowError,
+    SplurgeSchemaError,
+    SplurgeStreamError,
+    SplurgeTypeError,
+    SplurgeValidationError,
+    SplurgeValueError,
 )
+
+# Protocols
+from splurge_tabular.protocols import StreamingTabularDataProtocol, TabularDataProtocol
+from splurge_tabular.streaming_tabular_data_model import StreamingTabularDataModel
+from splurge_tabular.tabular_data_model import TabularDataModel
+from splurge_tabular.tabular_utils import normalize_rows, process_headers
 
 __all__ = [
     # Version
@@ -51,8 +58,17 @@ __all__ = [
     "normalize_rows",
     # Exceptions
     "SplurgeError",
-    "SplurgeParameterError",
+    "SplurgeTypeError",
+    "SplurgeValueError",
+    "SplurgeKeyError",
+    "SplurgeIndexError",
+    "SplurgeColumnError",
+    "SplurgeRowError",
     "SplurgeValidationError",
+    "SplurgeSchemaError",
+    "SplurgeStreamError",
+    "SplurgeEncodingError",
     "SplurgeFileError",
-    "SplurgeRangeError",
+    "SplurgeFileNotFoundError",
+    "SplurgeFilePermissionError",
 ]

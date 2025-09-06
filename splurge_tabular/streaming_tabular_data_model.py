@@ -1,5 +1,4 @@
-"""
-Streaming tabular data model for large datasets that don't fit in memory.
+"""Streaming tabular data model for large datasets that don't fit in memory.
 
 This class works with streams from DsvHelper.parse_stream to process data
 without loading the entire dataset into memory.
@@ -13,6 +12,7 @@ This module is licensed under the MIT License.
 
 from collections.abc import Generator, Iterator
 
+from splurge_tabular.exceptions import SplurgeTypeError, SplurgeValueError
 from splurge_tabular.protocols import StreamingTabularDataProtocol
 from splurge_tabular.tabular_utils import process_headers as _process_headers
 
@@ -30,13 +30,16 @@ class StreamingTabularDataModel(StreamingTabularDataProtocol):
     memory-efficient operations.
     """
 
+    DEFAULT_CHUNK_SIZE = 1000
+    MIN_CHUNK_SIZE = 100
+
     def __init__(
         self,
         stream: Iterator[list[list[str]]],
         *,
         header_rows: int = 1,
         skip_empty_rows: bool = True,
-        chunk_size: int = 1000,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
     ) -> None:
         """
         Initialize StreamingTabularDataModel.
@@ -48,17 +51,18 @@ class StreamingTabularDataModel(StreamingTabularDataProtocol):
             chunk_size (int): Maximum number of rows to keep in memory buffer (minimum 100).
 
         Raises:
-            ValueError: If stream or header configuration is invalid.
+            SplurgeTypeError: If stream is None.
+            SplurgeValueError: If header_rows or chunk_size is invalid.
         """
         if stream is None:
             msg = "Stream is required"
-            raise ValueError(msg)
+            raise SplurgeTypeError(msg)
         if header_rows < 0:
             msg = "Header rows must be greater than or equal to 0"
-            raise ValueError(msg)
-        if chunk_size < 100:
-            msg = "chunk_size must be at least 100"
-            raise ValueError(msg)
+            raise SplurgeValueError(msg)
+        if chunk_size < self.MIN_CHUNK_SIZE:
+            msg = f"chunk_size must be at least {self.MIN_CHUNK_SIZE}"
+            raise SplurgeValueError(msg)
 
         self._stream = stream
         self._header_rows = header_rows
@@ -121,12 +125,12 @@ class StreamingTabularDataModel(StreamingTabularDataProtocol):
         self._column_index_map = {name: i for i, name in enumerate(self._column_names)}
         self._is_initialized = True
 
-    # Removed local process_headers; logic is shared in splurge_tools.tabular_utils
-
     @property
     def column_names(self) -> list[str]:
-        """
-        List of column names.
+        """Get the list of column names.
+
+        Returns:
+            List of column names in order.
         """
         return self._column_names
 
@@ -134,21 +138,20 @@ class StreamingTabularDataModel(StreamingTabularDataProtocol):
         self,
         name: str,
     ) -> int:
-        """
-        Get the column index for a given name.
+        """Get the column index for a given name.
 
         Args:
-            name (str): Column name.
+            name: Column name.
 
         Returns:
-            int: Column index.
+            Zero-based index of the column.
 
         Raises:
-            ValueError: If column name is not found.
+            SplurgeColumnError: If column name is not found.
         """
         if name not in self._column_index_map:
             msg = f"Column name {name} not found"
-            raise ValueError(msg)
+            raise SplurgeValueError(msg)
         return self._column_index_map[name]
 
     @property

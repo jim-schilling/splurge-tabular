@@ -5,7 +5,6 @@ Tests component interactions and data flow between modules.
 """
 
 import pytest
-from pathlib import Path
 
 from splurge_tabular.common_utils import (
     batch_validate_rows,
@@ -13,7 +12,7 @@ from splurge_tabular.common_utils import (
     standardize_column_names,
     validate_data_structure,
 )
-from splurge_tabular.exceptions import SplurgeValidationError, SplurgeParameterError
+from splurge_tabular.exceptions import SplurgeRowError, SplurgeTypeError, SplurgeValidationError, SplurgeValueError
 from splurge_tabular.streaming_tabular_data_model import StreamingTabularDataModel
 from splurge_tabular.tabular_data_model import TabularDataModel
 from splurge_tabular.tabular_utils import normalize_rows, process_headers
@@ -109,8 +108,8 @@ class TestDataFlowIntegration:
         with pytest.raises(SplurgeValidationError):
             TabularDataModel([])
 
-        # Test with streaming model creation - it raises ValueError for None stream
-        with pytest.raises(ValueError):
+        # Test with streaming model creation - it raises SplurgeTypeError for None stream
+        with pytest.raises(SplurgeTypeError):
             StreamingTabularDataModel(None)
 
     def test_data_validation_pipeline(self):
@@ -295,19 +294,19 @@ class TestErrorPropagation:
         assert model.cell_value("Name", 0) == "John"
 
         # Test error in column access
-        with pytest.raises(SplurgeParameterError):
+        with pytest.raises(SplurgeValueError):
             model.column_values("NonExistentColumn")
 
     def test_parameter_validation_integration(self):
         """Test parameter validation works with data models."""
         # Test with invalid header_rows (need non-empty data first)
         data = [["Name", "Age"], ["John", "25"]]
-        
-        from splurge_tabular.exceptions import SplurgeRangeError
-        with pytest.raises(SplurgeRangeError):
+        from splurge_tabular.exceptions import SplurgeValueError
+
+        with pytest.raises(SplurgeValueError):
             TabularDataModel(data, header_rows=-1)  # Invalid header_rows
 
-        with pytest.raises(SplurgeParameterError):
+        with pytest.raises(SplurgeTypeError):
             TabularDataModel("not_a_list")  # Invalid data type
 
     def test_boundary_condition_handling(self):
@@ -324,6 +323,5 @@ class TestErrorPropagation:
             model.row(0)
 
         # Test cell access to non-existent row
-        from splurge_tabular.exceptions import SplurgeRangeError
-        with pytest.raises(SplurgeRangeError):
+        with pytest.raises(SplurgeRowError):
             model.cell_value("Name", 0)
