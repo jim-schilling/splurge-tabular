@@ -1,11 +1,31 @@
 # splurge-tabular
+[![PyPI version](https://badge.fury.io/py/splurge-dsv.svg)](https://pypi.org/project/splurge-dsv/)
+[![Python versions](https://img.shields.io/pypi/pyversions/splurge-tabular.svg)](https://pypi.org/project/splurge-dsv/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-[![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-197%20passed-green.svg)](https://github.com/jim-schilling/splurge-tabular)
-[![Coverage](https://img.shields.io/badge/coverage-95%25-green.svg)](https://github.com/jim-schilling/splurge-tabular)
+[![CI](https://github.com/jim-schilling/splurge-tabular/actions/workflows/ci-quick-test.yml/badge.svg)](https://github.com/jim-schilling/splurge-tabular/actions/workflows/ci-quick-test.yml)
+[![Coverage](https://img.shields.io/badge/coverage-96%25-brightgreen.svg)](https://github.com/jim-schilling/splurge-tabular)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![mypy](https://img.shields.io/badge/mypy-checked-black)](https://mypy-lang.org/)
 
 A modern, high-performance Python library for tabular data processing with both in-memory and streaming capabilities.
+
+> ⚠️ Release notice — Breaking changes in 2025.1.0
+>
+> The 2025.1.0 release introduces breaking changes to the exceptions and error codes raised by this library. Callers that depend on exact exception classes, message text, or literal error-code strings may need to update their code.
+>
+> Key changes:
+>
+> - Exceptions now carry structured metadata: an `error_code` (an `ErrorCode` enum) and an optional `context` dict.
+> - Some error types were reorganized into more specific subclasses (for example, configuration-, column-, row-, and validation-related errors).
+> - The textual formatting of some exception messages was stabilized to preserve backward compatibility where possible, but callers should prefer programmatic inspection of `error_code` and exception class.
+>
+> Migration:
+>
+> - Inspect raised exceptions for `error_code` (recommended) rather than parsing messages.
+> - See `docs/API-REFERENCE.md` (ErrorCode section) and `CHANGELOG.md` for the full list of changed codes and examples.
+>
+> If you rely on the previous exception shapes or messages and need help migrating, open an issue or consult the API reference in `docs/` or the detailed migration guide: `docs/notes/MIGRATION-TO-2025.1.0.md`.
 
 ## ✨ Features
 
@@ -14,7 +34,7 @@ A modern, high-performance Python library for tabular data processing with both 
 - **Robust Error Handling**: Comprehensive exception hierarchy with detailed error messages
 - **Flexible Data Input**: Support for CSV, JSON, and custom data formats
 - **High Performance**: Optimized for both small datasets and large-scale processing
-- **Production Ready**: 95% test coverage with 197 comprehensive tests
+- **Production Ready**: 96% test coverage with 219 comprehensive tests
 - **Modern Packaging**: Built with modern Python standards and best practices
 
 ## 🚀 Quick Start

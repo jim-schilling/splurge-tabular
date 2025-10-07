@@ -11,8 +11,8 @@ from pathlib import Path
 import pytest
 
 from splurge_tabular import (
-    SplurgeError,
-    SplurgeValidationError,
+    SplurgeTabularError,
+    SplurgeTabularValidationError,
     StreamingTabularDataModel,
     TabularDataModel,
     ensure_minimum_columns,
@@ -145,7 +145,7 @@ Bob,35,Paris"""
 
         # Test with invalid data structure
         invalid_rows = []  # Empty data
-        with pytest.raises(SplurgeValidationError):
+        with pytest.raises(SplurgeTabularValidationError):
             validate_data_structure(invalid_rows, expected_type=list, allow_empty=False)
 
         # Test minimum columns requirement - this doesn't raise, it pads
@@ -400,7 +400,7 @@ class TestErrorRecoveryWorkflows:
                     model = TabularDataModel([headers] + rows)
                     successful_models.append(model)
 
-                except (ValueError, SplurgeError) as e:
+                except (ValueError, SplurgeTabularError) as e:
                     failed_files.append((file_path, str(e)))
 
             # Validate results
@@ -450,7 +450,7 @@ class TestErrorRecoveryWorkflows:
                             normalized_rows = normalize_rows(rows, skip_empty_rows=True)
                             validate_data_structure(normalized_rows, expected_type=list)
                             # If we get here, data was processable
-                        except SplurgeValidationError:
+                        except SplurgeTabularValidationError:
                             # Expected for invalid data
                             pass
 

@@ -14,48 +14,50 @@ from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
 from typing import Any, TypeVar
 
+from splurge_tabular.error_codes import ErrorCode
 from splurge_tabular.exceptions import (
-    SplurgeColumnError,
-    SplurgeIndexError,
-    SplurgeKeyError,
-    SplurgeTypeError,
-    SplurgeValidationError,
-    SplurgeValueError,
+    SplurgeTabularColumnError,
+    SplurgeTabularIndexError,
+    SplurgeTabularKeyError,
+    SplurgeTabularTypeError,
+    SplurgeTabularValidationError,
+    SplurgeTabularValueError,
 )
 
 T = TypeVar("T")
 
 
 def safe_file_operation(file_path: str | Path) -> Path:
-    """
-    Safely validate and convert file path with consistent error handling.
+    """Validate and convert a file path with consistent error handling.
 
     Args:
-        file_path: Path to validate
-        operation: Description of the operation for error messages
+        file_path (str | Path): Path to validate.
 
     Returns:
-        Validated Path object
+        Path: Validated :class:`pathlib.Path` object.
 
     Raises:
-        SplurgeFileNotFoundError: If file doesn't exist when required
-        SplurgeFilePermissionError: If permission denied
-        SplurgeValidationError: If path is invalid
+        SplurgeTabularTypeError: If ``file_path`` is not a str or Path.
+        SplurgeTabularTypeError: If the provided path cannot be converted to a Path.
     """
     if not isinstance(file_path, str | Path):
         msg = f"file_path must be a string or Path object, got {type(file_path).__name__}"
-        raise SplurgeTypeError(
+        raise SplurgeTabularTypeError(
             msg,
             details=f"Expected str or Path, received: {type(file_path).__name__}",
+            error_code=ErrorCode.TYPE_INVALID,
+            context={"param": "file_path", "value": str(file_path)},
         )
 
     try:
         path = Path(file_path)
     except (TypeError, ValueError) as e:
         msg = f"file_path is not a valid path: {file_path}"
-        raise SplurgeTypeError(
+        raise SplurgeTabularTypeError(
             msg,
             details=str(e),
+            error_code=ErrorCode.TYPE_INVALID,
+            context={"param": "file_path", "value": str(file_path)},
         ) from e
 
     return path
@@ -67,16 +69,15 @@ def standardize_column_names(
     fill_empty: bool = True,
     prefix: str = "column_",
 ) -> list[str]:
-    """
-    Standardize column names by filling empty headers with generated names.
+    """Standardize column names by filling empty headers with generated names.
 
     Args:
-        headers: List of header strings (may contain empty strings)
-        fill_empty: Whether to fill empty headers with generated names
-        prefix: Prefix for generated column names
+        headers (list[str]): List of header strings (may contain empty strings).
+        fill_empty (bool): Whether to fill empty headers with generated names.
+        prefix (str): Prefix for generated column names.
 
     Returns:
-        List of standardized column names
+        list[str]: List of standardized column names.
 
     Example:
         ["Name", "", "City"] -> ["Name", "column_1", "City"]
@@ -100,16 +101,15 @@ def ensure_minimum_columns(
     *,
     fill_value: str = "",
 ) -> list[str]:
-    """
-    Ensure a row has at least the minimum number of columns.
+    """Ensure a row has at least the minimum number of columns.
 
     Args:
-        row: Row data as list of strings
-        min_columns: Minimum number of columns required
-        fill_value: Value to use for padding missing columns
+        row (list[str]): Row data as list of strings.
+        min_columns (int): Minimum number of columns required.
+        fill_value (str): Value to use for padding missing columns.
 
     Returns:
-        Row data padded to minimum columns
+        list[str]: Row data padded to the minimum number of columns.
     """
     if len(row) >= min_columns:
         return row
@@ -130,16 +130,16 @@ def safe_index_access(
     """Safely access list item by index with helpful error messages.
 
     Args:
-        items: List to access.
-        index: Index to access.
-        item_name: Name of items for error messages.
-        default: Default value if index out of range (if None, raises error).
+        items (list[T]): List to access.
+        index (int): Index to access.
+        item_name (str): Name of items for error messages.
+        default (T | None): Default value if index out of range (if None, raises).
 
     Returns:
-        Item at index or default value.
+        T: Item at index or the provided default.
 
     Raises:
-        SplurgeIndexError: If index is out of range and no default provided.
+        SplurgeTabularIndexError: If index is out of range and no default provided.
     """
     if 0 <= index < len(items):
         return items[index]
@@ -148,9 +148,11 @@ def safe_index_access(
         return default
 
     msg = f"{item_name} index {index} out of range"
-    raise SplurgeIndexError(
+    raise SplurgeTabularIndexError(
         msg,
         details=f"Valid range: 0 to {len(items) - 1}, got {index}",
+        error_code=ErrorCode.INDEX_OUT_OF_RANGE,
+        context={"item_name": item_name, "requested_index": str(index), "max_index": str(len(items) - 1)},
     )
 
 
@@ -164,16 +166,17 @@ def safe_dict_access(
     """Safely access dictionary value by key with helpful error messages.
 
     Args:
-        data: Dictionary to access.
-        key: Key to access.
-        item_name: Name of items for error messages.
-        default: Default value if key not found (if None, raises error).
+        data (dict[str, T]): Dictionary to access.
+        key (str): Key to access.
+        item_name (str): Name of items for error messages.
+        default (T | None): Default value if key not found (if None, raises).
 
     Returns:
-        Value for key or default value.
+        T: Value for key or default value.
 
     Raises:
-        SplurgeKeyError: If key not found and no default provided.
+        SplurgeTabularKeyError: If key not found and no default provided.
+        SplurgeTabularColumnError: If item_name == 'column' and key missing.
     """
     if key in data:
         return data[key]
@@ -188,14 +191,18 @@ def safe_dict_access(
 
     msg = f"{item_name} '{key}' not found"
     if item_name == "column":
-        raise SplurgeColumnError(
+        raise SplurgeTabularColumnError(
             msg,
             details=key_hint,
+            error_code=ErrorCode.COLUMN_NOT_FOUND,
+            context={"column": key, "available_hint": key_hint},
         )
     else:
-        raise SplurgeKeyError(
+        raise SplurgeTabularKeyError(
             msg,
             details=key_hint,
+            error_code=ErrorCode.KEY_NOT_FOUND,
+            context={"key": key, "available_hint": key_hint},
         )
 
 
@@ -206,41 +213,46 @@ def validate_data_structure(
     param_name: str = "data",
     allow_empty: bool = True,
 ) -> Any:
-    """
-    Validate data structure with consistent error handling.
+    """Validate data structure with consistent error handling.
 
     Args:
-        data: Data to validate
-        expected_type: Expected type of the data
-        param_name: Parameter name for error messages
-        allow_empty: Whether empty data is allowed
+        data (Any): Data to validate.
+        expected_type (type): Expected type of the data.
+        param_name (str): Parameter name for error messages.
+        allow_empty (bool): Whether empty data is allowed.
 
     Returns:
-        Validated data
+        Any: The validated data (unchanged if valid).
 
     Raises:
-        SplurgeTypeError: If data is wrong type
-        SplurgeValidationError: If data is empty and not allowed
+        SplurgeTabularTypeError: If data is wrong type or None when not allowed.
+        SplurgeTabularValidationError: If data is empty and allow_empty is False.
     """
     if data is None:
         msg = f"{param_name} cannot be None"
-        raise SplurgeTypeError(
+        raise SplurgeTabularTypeError(
             msg,
             details=f"Expected {expected_type.__name__}, got None",
+            error_code=ErrorCode.TYPE_INVALID,
+            context={"param": param_name},
         )
 
     if not isinstance(data, expected_type):
         msg = f"{param_name} must be {expected_type.__name__}, got {type(data).__name__}"
-        raise SplurgeTypeError(
+        raise SplurgeTabularTypeError(
             msg,
             details=f"Expected {expected_type.__name__}, received: {type(data).__name__}",
+            error_code=ErrorCode.TYPE_INVALID,
+            context={"param": param_name, "received_type": type(data).__name__},
         )
 
     if not allow_empty and not data:
         msg = f"{param_name} cannot be empty"
-        raise SplurgeValidationError(
+        raise SplurgeTabularValidationError(
             msg,
             details=f"Empty {expected_type.__name__} not allowed",
+            error_code=ErrorCode.VALIDATION_EMPTY_NOT_ALLOWED,
+            context={"param": param_name},
         )
 
     return data
@@ -267,6 +279,15 @@ def create_parameter_validator(
     """
 
     def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
+        """Validate a dict of parameters using the supplied validators.
+
+        Args:
+            params (dict[str, Any]): Dictionary of parameter values to validate.
+
+        Returns:
+            dict[str, Any]: A dictionary of validated parameter values (only
+                keys present in the ``validators`` mapping are returned).
+        """
         validated = {}
         for param_name, validator in validators.items():
             if param_name in params:
@@ -299,17 +320,19 @@ def batch_validate_rows(
         SplurgeTypeError: If row validation fails
     """
     for row_idx, row in enumerate(rows):
-        # Skip empty rows if requested
-        if skip_empty and not any(cell.strip() for cell in row):
-            continue
-
-        # Validate row is list of strings
+        # Validate row is list-like before attempting to iterate
         if not isinstance(row, list):
             msg = f"Row {row_idx} must be a list, got {type(row).__name__}"
-            raise SplurgeTypeError(
+            raise SplurgeTabularTypeError(
                 msg,
                 details="Each row must be a list of strings",
+                error_code=ErrorCode.TYPE_INVALID,
+                context={"row_index": str(row_idx), "received_type": type(row).__name__},
             )
+
+        # Skip empty rows if requested (handle non-string cells safely)
+        if skip_empty and not any((cell is not None and str(cell).strip()) for cell in row):
+            continue
 
         # Ensure all cells are strings
         normalized_row = [str(cell) if cell is not None else "" for cell in row]
@@ -470,11 +493,12 @@ def validate_string_parameters(
 
     Raises:
         SplurgeTypeError: If validation fails
+        SplurgeValueError: If validation fails
     """
     if value is None:
         if not allow_none:
             msg = f"{param_name} cannot be None"
-            raise SplurgeTypeError(
+            raise SplurgeTabularTypeError(
                 msg,
                 details="None values are not allowed for this parameter",
             )
@@ -482,28 +506,28 @@ def validate_string_parameters(
 
     if not isinstance(value, str):
         msg = f"{param_name} must be a string, got {type(value).__name__}"
-        raise SplurgeTypeError(
+        raise SplurgeTabularTypeError(
             msg,
             details=f"Expected string, received: {value!r}",
         )
 
     if not value and not allow_empty:
         msg = f"{param_name} cannot be empty"
-        raise SplurgeValueError(
+        raise SplurgeTabularValueError(
             msg,
             details="Empty strings are not allowed for this parameter",
         )
 
     if min_length is not None and len(value) < min_length:
         msg = f"{param_name} must be at least {min_length} characters long"
-        raise SplurgeValueError(
+        raise SplurgeTabularValueError(
             msg,
             details=f"Got {len(value)} characters, minimum required: {min_length}",
         )
 
     if max_length is not None and len(value) > max_length:
         msg = f"{param_name} must be at most {max_length} characters long"
-        raise SplurgeValueError(
+        raise SplurgeTabularValueError(
             msg,
             details=f"Got {len(value)} characters, maximum allowed: {max_length}",
         )

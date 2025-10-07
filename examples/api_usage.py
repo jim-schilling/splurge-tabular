@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Comprehensive API Usage Example for splurge-tabular
 
@@ -16,11 +15,11 @@ import json
 from pathlib import Path
 
 from splurge_tabular import (
-    SplurgeColumnError,
-    SplurgeRowError,
+    SplurgeTabularColumnError,
+    SplurgeTabularRowError,
     # Exceptions
-    SplurgeTypeError,
-    SplurgeValidationError,
+    SplurgeTabularTypeError,
+    SplurgeTabularValidationError,
     StreamingTabularDataModel,
     TabularDataModel,
     ensure_minimum_columns,
@@ -154,7 +153,7 @@ def demo_error_handling():
     try:
         invalid_data = "not a list"
         TabularDataModel(invalid_data)  # type: ignore
-    except SplurgeTypeError as e:
+    except SplurgeTabularTypeError as e:
         print(f"Type error caught: {e}")
 
     # Test column not found
@@ -162,7 +161,7 @@ def demo_error_handling():
         data = [["Name", "Age"], ["Alice", "25"]]
         model = TabularDataModel(data)
         model.column_values("NonExistentColumn")
-    except SplurgeColumnError as e:
+    except SplurgeTabularColumnError as e:
         print(f"Column error caught: {e}")
 
     # Test row index out of range
@@ -170,7 +169,7 @@ def demo_error_handling():
         data = [["Name", "Age"], ["Alice", "25"]]
         model = TabularDataModel(data)
         model.cell_value("Name", 10)  # Use cell_value which has bounds checking
-    except SplurgeRowError as e:
+    except SplurgeTabularRowError as e:
         print(f"Row error caught: {e}")
 
 
@@ -184,7 +183,7 @@ def demo_utility_functions():
     try:
         validate_data_structure(valid_data, expected_type=list, param_name="test_data")
         print("✓ Data structure is valid")
-    except SplurgeValidationError as e:
+    except SplurgeTabularValidationError as e:
         print(f"✗ Validation failed: {e}")
 
     # Test minimum columns check
@@ -192,7 +191,7 @@ def demo_utility_functions():
     data_with_few_columns = [["Name"], ["Alice"]]
     try:
         ensure_minimum_columns(data_with_few_columns, min_columns=2)
-    except SplurgeValidationError as e:
+    except SplurgeTabularValidationError as e:
         print(f"✗ Minimum columns check failed: {e}")
 
     # Test header processing utility
@@ -226,7 +225,7 @@ def demo_file_operations():
     # Test with invalid path
     try:
         safe_file_operation(123)  # type: ignore
-    except SplurgeTypeError as e:
+    except SplurgeTabularTypeError as e:
         print(f"✓ Invalid path type caught: {e}")
 
 

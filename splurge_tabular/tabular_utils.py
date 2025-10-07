@@ -23,11 +23,11 @@ def process_headers(
     """Process header rows and return processed header data and column names.
 
     Args:
-        header_data: Raw header data rows.
-        header_rows: Number of header rows to merge.
+        header_data (list[list[str]]): Raw header data rows.
+        header_rows (int): Number of header rows to merge.
 
     Returns:
-        Tuple of (processed_header_data, column_names).
+        tuple[list[list[str]], list[str]]: A tuple of (processed_header_data, column_names).
     """
     processed_header_data = header_data.copy()
 
@@ -67,11 +67,11 @@ def normalize_rows(
     """Normalize rows to equal length and optionally drop empty rows.
 
     Args:
-        rows: List of rows to normalize.
-        skip_empty_rows: Whether to skip rows that are empty or contain only whitespace.
+        rows (list[list[str]]): List of rows to normalize.
+        skip_empty_rows (bool): Whether to skip rows that are empty or contain only whitespace.
 
     Returns:
-        List of normalized rows with equal length.
+        list[list[str]]: List of normalized rows with equal length.
     """
     if not rows:
         return []
@@ -90,13 +90,13 @@ def normalize_rows(
 
 
 def should_skip_row(row: list[str]) -> bool:
-    """Check if a row should be skipped because it is empty.
+    """Return True if a row should be skipped because it is empty.
 
     Args:
-        row: Row to check.
+        row (list[str]): Row to check.
 
     Returns:
-        True if the row is empty or contains only whitespace.
+        bool: True if the row is empty or contains only whitespace.
     """
     return all(cell.strip() == "" for cell in row)
 
@@ -105,9 +105,9 @@ def auto_column_names(count: int) -> list[str]:
     """Generate default column names.
 
     Args:
-        count: Number of column names to generate.
+        count (int): Number of column names to generate.
 
     Returns:
-        List of default column names in format "column_0", "column_1", etc.
+        list[str]: List of default column names in format ``"column_0"``, ``"column_1"``, etc.
     """
     return [f"column_{i}" for i in range(count)]
