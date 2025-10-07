@@ -1,5 +1,17 @@
 # splurge-tabular Detailed Documentation
 
+> ⚠️ Release notice — Breaking changes in 2025.1.0
+>
+> The 2025.1.0 release introduces breaking changes to the exceptions and error codes used throughout this library. Code that depends on exact exception classes, message text, or literal error-code strings may require updates.
+>
+> Highlights:
+>
+> - Exceptions now include a structured `error_code` (the `ErrorCode` enum in `splurge_tabular.error_codes`) and an optional `context` mapping for additional details.
+> - Several exception subclasses were added or reorganized to give callers finer-grained control (configuration, column, index, row, and validation errors).
+> - Prefer programmatic checks against `ErrorCode` values and exception classes instead of parsing message strings.
+>
+> See `docs/API-REFERENCE.md` (ErrorCode and Exceptions sections), `CHANGELOG.md`, and the detailed migration guide at `docs/notes/MIGRATION-TO-2025.1.0.md` for complete migration guidance and examples.
+
 ## Table of Contents
 - [Overview](#overview)
 - [Installation](#installation)
