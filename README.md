@@ -1,6 +1,6 @@
 # splurge-tabular
-[![PyPI version](https://badge.fury.io/py/splurge-dsv.svg)](https://pypi.org/project/splurge-dsv/)
-[![Python versions](https://img.shields.io/pypi/pyversions/splurge-tabular.svg)](https://pypi.org/project/splurge-dsv/)
+[![PyPI version](https://badge.fury.io/py/splurge-tabular.svg)](https://pypi.org/project/splurge-tabular/)
+[![Python versions](https://img.shields.io/pypi/pyversions/splurge-tabular.svg)](https://pypi.org/project/splurge-tabular/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 [![CI](https://github.com/jim-schilling/splurge-tabular/actions/workflows/ci-quick-test.yml/badge.svg)](https://github.com/jim-schilling/splurge-tabular/actions/workflows/ci-quick-test.yml)
