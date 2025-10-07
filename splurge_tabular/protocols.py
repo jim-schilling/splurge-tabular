@@ -21,45 +21,45 @@ from splurge_typer.data_type import DataType
 class TabularDataProtocol(Protocol):
     """Protocol for tabular data models.
 
-    This protocol defines the interface that all tabular data models should implement,
-    ensuring consistent behavior across different implementations.
+    This protocol defines the interface that all tabular data models should
+    implement, ensuring consistent behavior across different implementations.
     """
 
     @property
     def column_names(self) -> list[str]:
-        """Get the list of column names.
+        """List of column names in order.
 
         Returns:
-            List of column names in order.
+            list[str]: Column names in their defined order.
         """
         ...
 
     @property
     def row_count(self) -> int:
-        """Get the number of data rows.
+        """Number of data rows.
 
         Returns:
-            Number of rows in the dataset.
+            int: Number of rows in the dataset.
         """
         ...
 
     @property
     def column_count(self) -> int:
-        """Get the number of columns.
+        """Number of columns.
 
         Returns:
-            Number of columns in the dataset.
+            int: Number of columns in the dataset.
         """
         ...
 
     def column_index(self, name: str) -> int:
-        """Get the index of a column by name.
+        """Get the zero-based index of a column by name.
 
         Args:
-            name: Column name to find.
+            name (str): Column name to find.
 
         Returns:
-            Zero-based index of the column.
+            int: Zero-based index of the column.
         """
         ...
 
@@ -67,74 +67,74 @@ class TabularDataProtocol(Protocol):
         """Get the inferred data type of a column.
 
         Args:
-            name: Column name.
+            name (str): Column name.
 
         Returns:
-            Inferred data type for the column.
+            DataType: Inferred data type for the column.
         """
         ...
 
     def column_values(self, name: str) -> list[str]:
-        """Get all values for a specific column.
+        """Return all values for a specific column.
 
         Args:
-            name: Column name.
+            name (str): Column name.
 
         Returns:
-            List of all values in the column.
+            list[str]: All values in the column.
         """
         ...
 
     def cell_value(self, name: str, row_index: int) -> str:
-        """Get the value of a specific cell.
+        """Return the value of a specific cell.
 
         Args:
-            name: Column name.
-            row_index: Zero-based row index.
+            name (str): Column name.
+            row_index (int): Zero-based row index.
 
         Returns:
-            Value at the specified cell.
+            str: Value at the specified cell.
         """
         ...
 
     def row(self, index: int) -> dict[str, str]:
-        """Get a row as a dictionary.
+        """Return a row as a dictionary.
 
         Args:
-            index: Zero-based row index.
+            index (int): Zero-based row index.
 
         Returns:
-            Row data as a dictionary with column names as keys.
+            dict[str, str]: Row data mapping column names to values.
         """
         ...
 
     def row_as_list(self, index: int) -> list[str]:
-        """Get a row as a list.
+        """Return a row as a list of values.
 
         Args:
-            index: Zero-based row index.
+            index (int): Zero-based row index.
 
         Returns:
-            Row data as a list of values.
+            list[str]: Row data as a list.
         """
         ...
 
     def row_as_tuple(self, index: int) -> tuple[str, ...]:
-        """Get a row as a tuple.
+        """Return a row as a tuple of values.
 
         Args:
-            index: Zero-based row index.
+            index (int): Zero-based row index.
 
         Returns:
-            Row data as a tuple of values.
+            tuple[str, ...]: Row data as a tuple.
         """
         ...
 
     def __iter__(self) -> Iterator[list[str]]:
-        """Iterate over rows as lists.
+        """Iterate over rows as lists of strings.
 
         Returns:
-            Iterator yielding rows as lists of strings.
+            Iterator[list[str]]: Iterator yielding rows as lists of strings.
         """
         ...
 
@@ -142,7 +142,7 @@ class TabularDataProtocol(Protocol):
         """Iterate over rows as dictionaries.
 
         Returns:
-            Generator yielding rows as dictionaries with column names as keys.
+            Generator[dict[str, str], None, None]: Generator yielding rows as dictionaries with column names as keys.
         """
         ...
 
@@ -150,7 +150,7 @@ class TabularDataProtocol(Protocol):
         """Iterate over rows as tuples.
 
         Returns:
-            Generator yielding rows as tuples of values.
+            Generator[tuple[str, ...], None, None]: Generator yielding rows as tuples of values.
         """
         ...
 
@@ -165,38 +165,38 @@ class StreamingTabularDataProtocol(Protocol):
 
     @property
     def column_names(self) -> list[str]:
-        """Get the list of column names.
+        """List of column names in order.
 
         Returns:
-            List of column names in order.
+            list[str]: Column names in their defined order.
         """
         ...
 
     @property
     def column_count(self) -> int:
-        """Get the number of columns.
+        """Number of columns.
 
         Returns:
-            Number of columns in the dataset.
+            int: Number of columns in the dataset.
         """
         ...
 
     def column_index(self, name: str) -> int:
-        """Get the index of a column by name.
+        """Get the zero-based index of a column by name.
 
         Args:
-            name: Column name to find.
+            name (str): Column name to find.
 
         Returns:
-            Zero-based index of the column.
+            int: Zero-based index of the column.
         """
         ...
 
     def __iter__(self) -> Iterator[list[str]]:
-        """Iterate over rows as lists.
+        """Iterate over rows as lists of strings.
 
         Returns:
-            Iterator yielding rows as lists of strings.
+            Iterator[list[str]]: Iterator yielding rows as lists of strings.
         """
         ...
 
@@ -204,7 +204,7 @@ class StreamingTabularDataProtocol(Protocol):
         """Iterate over rows as dictionaries.
 
         Returns:
-            Generator yielding rows as dictionaries with column names as keys.
+            Generator[dict[str, str], None, None]: Generator yielding rows as dictionaries with column names as keys.
         """
         ...
 
@@ -212,7 +212,7 @@ class StreamingTabularDataProtocol(Protocol):
         """Iterate over rows as tuples.
 
         Returns:
-            Generator yielding rows as tuples of values.
+            Generator[tuple[str, ...], None, None]: Generator yielding rows as tuples of values.
         """
         ...
 

@@ -1,5 +1,4 @@
 # splurge-tabular
-# Splurge Tabular Library
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
@@ -7,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "splurge-tabular"
-dynamic = ["version"]
+version = "2025.1.0"
 description = "A Python library for tabular data processing with in-memory and streaming support"
 readme = "README.md"
 license = "MIT"
@@ -18,7 +17,7 @@ authors = [
 maintainers = [
     {name = "Jim Schilling"},
 ]
-keywords = ["tabular", "data", "csv", "processing", "streaming"]
+keywords = ["tabular", "data", "csv", "dsv", "delimited", "processing", "streaming"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -27,11 +26,12 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [
-    "splurge-typer>=2025.0.1",
+    "splurge-typer>=2025.1.0",
 ]
 
 [project.urls]
@@ -46,10 +46,10 @@ dev = [
     "pytest-cov>=4.0.0",
     "pytest-xdist>=3.0.0",
     "ruff>=0.1.0",
-]
-docs = [
-    "sphinx>=5.0.0",
-    "sphinx-rtd-theme>=1.2.0",
+    "mypy>=1.0.0",
+    "pytest-mock>=3.0.0",
+    "pre-commit>=3.0.0",
+    "hypothesis>=6.0.0",
 ]
 cli = [
     "typer>=0.9.0",
@@ -96,7 +96,7 @@ known-first-party = ["splurge_tabular"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-x -v -n auto --cov=splurge_tabular --cov-report=term-missing --cov-report=html"
+addopts = "-x -v -n 4"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
@@ -122,3 +122,14 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
+[tool.mypy]
+# Only run mypy against the splurge_tabular package
+files = ["splurge_tabular"]
+# show_error_codes helps with diagnostics
+show_error_codes = true
+ # Treat third-party packages without stubs/py.typed as untyped so imports don't error
+ ignore_missing_imports = true
+ # Keep import following quiet for third-party libs
+ follow_imports = "silent"
+

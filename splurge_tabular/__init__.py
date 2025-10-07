@@ -11,7 +11,7 @@ This module is licensed under the MIT License.
 
 from __future__ import annotations
 
-__version__ = "2025.0.0"
+__version__ = "2025.1.0"
 
 # Main classes
 # Utility functions
@@ -19,20 +19,20 @@ from splurge_tabular.common_utils import ensure_minimum_columns, safe_file_opera
 
 # Exceptions
 from splurge_tabular.exceptions import (
-    SplurgeColumnError,
-    SplurgeEncodingError,
-    SplurgeError,
-    SplurgeFileError,
-    SplurgeFileNotFoundError,
-    SplurgeFilePermissionError,
-    SplurgeIndexError,
-    SplurgeKeyError,
-    SplurgeRowError,
-    SplurgeSchemaError,
-    SplurgeStreamError,
-    SplurgeTypeError,
-    SplurgeValidationError,
-    SplurgeValueError,
+    SplurgeTabularColumnError,
+    SplurgeTabularEncodingError,
+    SplurgeTabularError,
+    SplurgeTabularFileError,
+    SplurgeTabularFileNotFoundError,
+    SplurgeTabularFilePermissionError,
+    SplurgeTabularIndexError,
+    SplurgeTabularKeyError,
+    SplurgeTabularRowError,
+    SplurgeTabularSchemaError,
+    SplurgeTabularStreamError,
+    SplurgeTabularTypeError,
+    SplurgeTabularValidationError,
+    SplurgeTabularValueError,
 )
 
 # Protocols
@@ -57,18 +57,18 @@ __all__ = [
     "ensure_minimum_columns",
     "normalize_rows",
     # Exceptions
-    "SplurgeError",
-    "SplurgeTypeError",
-    "SplurgeValueError",
-    "SplurgeKeyError",
-    "SplurgeIndexError",
-    "SplurgeColumnError",
-    "SplurgeRowError",
-    "SplurgeValidationError",
-    "SplurgeSchemaError",
-    "SplurgeStreamError",
-    "SplurgeEncodingError",
-    "SplurgeFileError",
-    "SplurgeFileNotFoundError",
-    "SplurgeFilePermissionError",
+    "SplurgeTabularError",
+    "SplurgeTabularTypeError",
+    "SplurgeTabularValueError",
+    "SplurgeTabularKeyError",
+    "SplurgeTabularIndexError",
+    "SplurgeTabularColumnError",
+    "SplurgeTabularRowError",
+    "SplurgeTabularValidationError",
+    "SplurgeTabularSchemaError",
+    "SplurgeTabularStreamError",
+    "SplurgeTabularEncodingError",
+    "SplurgeTabularFileError",
+    "SplurgeTabularFileNotFoundError",
+    "SplurgeTabularFilePermissionError",
 ]

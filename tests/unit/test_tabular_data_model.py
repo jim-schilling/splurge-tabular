@@ -8,11 +8,11 @@ import pytest
 from splurge_typer.data_type import DataType
 
 from splurge_tabular.exceptions import (
-    SplurgeColumnError,
-    SplurgeRowError,
-    SplurgeTypeError,
-    SplurgeValidationError,
-    SplurgeValueError,
+    SplurgeTabularColumnError,
+    SplurgeTabularRowError,
+    SplurgeTabularTypeError,
+    SplurgeTabularValidationError,
+    SplurgeTabularValueError,
 )
 from splurge_tabular.tabular_data_model import TabularDataModel
 
@@ -31,7 +31,7 @@ class TestTabularDataModel:
 
     def test_empty_data_raises_error(self):
         """Test that empty data raises an error."""
-        with pytest.raises(SplurgeValidationError):
+        with pytest.raises(SplurgeTabularValidationError):
             TabularDataModel([])
 
     def test_single_row_data(self):
@@ -90,7 +90,7 @@ class TestTabularDataModel:
         data = [["Name", "Age", "City"]]
         model = TabularDataModel(data)
 
-        with pytest.raises(SplurgeColumnError):
+        with pytest.raises(SplurgeTabularColumnError):
             model.column_index("Invalid")
 
     def test_column_type_inference(self):
@@ -124,7 +124,7 @@ class TestTabularDataModel:
         data = [["Name", "Age"], ["John", "30"]]
         model = TabularDataModel(data)
 
-        with pytest.raises(SplurgeValueError):
+        with pytest.raises(SplurgeTabularValueError):
             model.column_values("Invalid")
 
     def test_cell_value(self):
@@ -141,7 +141,7 @@ class TestTabularDataModel:
         data = [["Name", "Age"], ["John", "30"]]
         model = TabularDataModel(data)
 
-        with pytest.raises(SplurgeValueError):
+        with pytest.raises(SplurgeTabularValueError):
             model.cell_value("Invalid", 0)
 
     def test_cell_value_invalid_row(self):
@@ -149,7 +149,7 @@ class TestTabularDataModel:
         data = [["Name", "Age"], ["John", "30"]]
         model = TabularDataModel(data)
 
-        with pytest.raises(SplurgeRowError):
+        with pytest.raises(SplurgeTabularRowError):
             model.cell_value("Name", 5)
 
     def test_iter_rows(self):
@@ -291,17 +291,17 @@ class TestTabularDataModel:
         """Test __init__ with invalid header_rows type."""
         data = [["Name", "Age"], ["John", "30"]]
 
-        with pytest.raises(SplurgeTypeError):
+        with pytest.raises(SplurgeTabularTypeError):
             TabularDataModel(data, header_rows="invalid")
 
-        with pytest.raises(SplurgeTypeError):
+        with pytest.raises(SplurgeTabularTypeError):
             TabularDataModel(data, header_rows=1.5)
 
     def test_init_negative_header_rows(self):
         """Test __init__ with negative header_rows value."""
         data = [["Name", "Age"], ["John", "30"]]
 
-        with pytest.raises(SplurgeValueError):
+        with pytest.raises(SplurgeTabularValueError):
             TabularDataModel(data, header_rows=-1)
 
     def test_column_name_padding(self):
@@ -368,7 +368,7 @@ class TestTabularDataModel:
         assert typed_view.column_index("Age") == 1
         assert typed_view.column_index("City") == 2
 
-        with pytest.raises(SplurgeColumnError):
+        with pytest.raises(SplurgeTabularColumnError):
             typed_view.column_index("Invalid")
 
     def test_typed_view_iteration_methods(self):
@@ -401,11 +401,11 @@ class TestTabularDataModel:
         typed_view = model.to_typed()
 
         # Test row_as_list with invalid index
-        with pytest.raises(SplurgeRowError):
+        with pytest.raises(SplurgeTabularRowError):
             typed_view.row_as_list(5)
 
         # Test row_as_tuple with invalid index
-        with pytest.raises(SplurgeRowError):
+        with pytest.raises(SplurgeTabularRowError):
             typed_view.row_as_tuple(5)
 
     def test_typed_view_type_conversion_comprehensive(self):

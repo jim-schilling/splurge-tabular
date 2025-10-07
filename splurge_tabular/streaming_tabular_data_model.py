@@ -12,7 +12,12 @@ This module is licensed under the MIT License.
 
 from collections.abc import Generator, Iterator
 
-from splurge_tabular.exceptions import SplurgeTypeError, SplurgeValueError
+from splurge_tabular.error_codes import ErrorCode
+from splurge_tabular.exceptions import (
+    SplurgeTabularColumnError,
+    SplurgeTabularConfigurationError,
+    SplurgeTabularTypeError,
+)
 from splurge_tabular.protocols import StreamingTabularDataProtocol
 from splurge_tabular.tabular_utils import process_headers as _process_headers
 
@@ -56,13 +61,25 @@ class StreamingTabularDataModel(StreamingTabularDataProtocol):
         """
         if stream is None:
             msg = "Stream is required"
-            raise SplurgeTypeError(msg)
+            raise SplurgeTabularTypeError(
+                msg,
+                error_code=ErrorCode.TYPE_INVALID,
+                context={"param": "stream"},
+            )
         if header_rows < 0:
             msg = "Header rows must be greater than or equal to 0"
-            raise SplurgeValueError(msg)
+            raise SplurgeTabularConfigurationError(
+                msg,
+                error_code=ErrorCode.CONFIG_INVALID,
+                context={"param": "header_rows", "value": str(header_rows)},
+            )
         if chunk_size < self.MIN_CHUNK_SIZE:
             msg = f"chunk_size must be at least {self.MIN_CHUNK_SIZE}"
-            raise SplurgeValueError(msg)
+            raise SplurgeTabularConfigurationError(
+                msg,
+                error_code=ErrorCode.CONFIG_INVALID,
+                context={"param": "chunk_size", "value": str(chunk_size)},
+            )
 
         self._stream = stream
         self._header_rows = header_rows
@@ -81,8 +98,12 @@ class StreamingTabularDataModel(StreamingTabularDataProtocol):
         self._initialize_from_stream()
 
     def _initialize_from_stream(self) -> None:
-        """
-        Initialize the model by processing headers from the stream.
+        """Initialize the model by reading header rows from the stream.
+
+        This method reads up to `self._header_rows` rows from the provided
+        stream iterator to form the header. Any remaining rows from the
+        first chunk are buffered for iteration. The method is idempotent and
+        will no-op if initialization has already completed.
         """
         if self._is_initialized:
             return
@@ -147,11 +168,15 @@ class StreamingTabularDataModel(StreamingTabularDataProtocol):
             Zero-based index of the column.
 
         Raises:
-            SplurgeColumnError: If column name is not found.
+            SplurgeTabularColumnError: If column name is not found.
         """
         if name not in self._column_index_map:
             msg = f"Column name {name} not found"
-            raise SplurgeValueError(msg)
+            raise SplurgeTabularColumnError(
+                msg,
+                error_code=ErrorCode.COLUMN_NOT_FOUND,
+                context={"column": name},
+            )
         return self._column_index_map[name]
 
     @property
@@ -162,8 +187,10 @@ class StreamingTabularDataModel(StreamingTabularDataProtocol):
         return len(self._column_names)
 
     def __iter__(self) -> Generator[list[str], None, None]:
-        """
-        Iterate over all rows in the stream.
+        """Iterate over rows from the buffer and the underlying stream.
+
+        Yields rows as lists of strings. New column names are auto-created if
+        later rows contain more columns than the current header.
         """
         # Yield buffered rows first
         for row in self._buffer:

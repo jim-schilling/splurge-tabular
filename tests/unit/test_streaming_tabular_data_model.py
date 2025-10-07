@@ -8,7 +8,7 @@ from collections.abc import Iterator
 
 import pytest
 
-from splurge_tabular.exceptions import SplurgeTypeError, SplurgeValueError
+from splurge_tabular.exceptions import SplurgeTabularTypeError, SplurgeTabularValueError
 from splurge_tabular.streaming_tabular_data_model import StreamingTabularDataModel
 
 
@@ -67,7 +67,7 @@ class TestStreamingTabularDataModel:
 
         model = StreamingTabularDataModel(data_stream())
 
-        with pytest.raises(SplurgeValueError, match="Column name Invalid not found"):
+        with pytest.raises(SplurgeTabularValueError, match="Column name Invalid not found"):
             model.column_index("Invalid")
 
     def test_iteration_with_headers(self):
@@ -231,18 +231,18 @@ class TestStreamingTabularDataModel:
     def test_initialization_validation(self):
         """Test initialization parameter validation."""
         # Test None stream
-        with pytest.raises(SplurgeTypeError, match="Stream is required"):
+        with pytest.raises(SplurgeTabularTypeError, match="Stream is required"):
             StreamingTabularDataModel(None)
 
         # Test negative header_rows
         def dummy_stream():
             return iter([])
 
-        with pytest.raises(SplurgeValueError, match="Header rows must be greater than or equal to 0"):
+        with pytest.raises(SplurgeTabularValueError, match="Header rows must be greater than or equal to 0"):
             StreamingTabularDataModel(dummy_stream(), header_rows=-1)
 
         # Test small chunk_size
-        with pytest.raises(SplurgeValueError, match="chunk_size must be at least 100"):
+        with pytest.raises(SplurgeTabularValueError, match="chunk_size must be at least 100"):
             StreamingTabularDataModel(dummy_stream(), chunk_size=50)
 
     def test_empty_stream_handling(self):
