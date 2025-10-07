@@ -320,11 +320,7 @@ def batch_validate_rows(
         SplurgeTypeError: If row validation fails
     """
     for row_idx, row in enumerate(rows):
-        # Skip empty rows if requested
-        if skip_empty and not any(cell.strip() for cell in row):
-            continue
-
-        # Validate row is list of strings
+        # Validate row is list-like before attempting to iterate
         if not isinstance(row, list):
             msg = f"Row {row_idx} must be a list, got {type(row).__name__}"
             raise SplurgeTabularTypeError(
@@ -333,6 +329,10 @@ def batch_validate_rows(
                 error_code=ErrorCode.TYPE_INVALID,
                 context={"row_index": str(row_idx), "received_type": type(row).__name__},
             )
+
+        # Skip empty rows if requested (handle non-string cells safely)
+        if skip_empty and not any((cell is not None and str(cell).strip()) for cell in row):
+            continue
 
         # Ensure all cells are strings
         normalized_row = [str(cell) if cell is not None else "" for cell in row]
