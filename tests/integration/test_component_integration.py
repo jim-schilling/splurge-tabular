@@ -6,16 +6,10 @@ Tests component interactions and data flow between modules.
 
 import pytest
 
-from splurge_tabular.common_utils import (
-    batch_validate_rows,
-    ensure_minimum_columns,
-    standardize_column_names,
-    validate_data_structure,
-)
+from splurge_tabular.common_utils import batch_validate_rows, ensure_minimum_columns, standardize_column_names
 from splurge_tabular.exceptions import (
-    SplurgeTabularRowError,
+    SplurgeTabularLookupError,
     SplurgeTabularTypeError,
-    SplurgeTabularValidationError,
     SplurgeTabularValueError,
 )
 from splurge_tabular.streaming_tabular_data_model import StreamingTabularDataModel
@@ -103,20 +97,6 @@ class TestDataFlowIntegration:
 
         assert memory_rows == streaming_rows
 
-    def test_error_handling_across_components(self):
-        """Test error handling consistency across components."""
-        # Test with invalid data structure
-        with pytest.raises(SplurgeTabularValidationError):
-            validate_data_structure([], expected_type=list, allow_empty=False)
-
-        # Test with data model creation
-        with pytest.raises(SplurgeTabularValidationError):
-            TabularDataModel([])
-
-        # Test with streaming model creation - it raises SplurgeTypeError for None stream
-        with pytest.raises(SplurgeTabularTypeError):
-            StreamingTabularDataModel(None)
-
     def test_data_validation_pipeline(self):
         """Test complete data validation pipeline."""
         # Raw data with various issues
@@ -128,14 +108,11 @@ class TestDataFlowIntegration:
             ["", "30", ""],  # Partial empty
         ]
 
-        # Step 1: Basic structure validation
-        validated_data = validate_data_structure(raw_data, expected_type=list)
-
         # Step 2: Process headers
-        headers, column_names = process_headers([validated_data[0]], header_rows=1)
+        headers, column_names = process_headers([raw_data[0]], header_rows=1)
 
         # Step 3: Normalize and validate rows
-        data_rows = validated_data[1:]
+        data_rows = raw_data[1:]
         normalized_rows = list(batch_validate_rows(data_rows, min_columns=3))
 
         # Step 4: Create final dataset
@@ -324,9 +301,9 @@ class TestErrorPropagation:
         assert model.column_count == 0  # No data rows means no columns determined
 
         # Test access to non-existent row
-        with pytest.raises(IndexError):
+        with pytest.raises(SplurgeTabularLookupError):
             model.row(0)
 
         # Test cell access to non-existent row
-        with pytest.raises(SplurgeTabularRowError):
+        with pytest.raises(SplurgeTabularLookupError):
             model.cell_value("Name", 0)

@@ -12,22 +12,16 @@ This module is licensed under the MIT License.
 """
 
 import json
-from pathlib import Path
 
 from splurge_tabular import (
-    SplurgeTabularColumnError,
-    SplurgeTabularRowError,
+    SplurgeTabularLookupError,
     # Exceptions
     SplurgeTabularTypeError,
-    SplurgeTabularValidationError,
     StreamingTabularDataModel,
     TabularDataModel,
     ensure_minimum_columns,
     normalize_rows,
     process_headers,
-    # Utility functions
-    safe_file_operation,
-    validate_data_structure,
 )
 
 
@@ -152,7 +146,7 @@ def demo_error_handling():
     # Test invalid data structure
     try:
         invalid_data = "not a list"
-        TabularDataModel(invalid_data)  # type: ignore
+        TabularDataModel(invalid_data)
     except SplurgeTabularTypeError as e:
         print(f"Type error caught: {e}")
 
@@ -161,7 +155,7 @@ def demo_error_handling():
         data = [["Name", "Age"], ["Alice", "25"]]
         model = TabularDataModel(data)
         model.column_values("NonExistentColumn")
-    except SplurgeTabularColumnError as e:
+    except SplurgeTabularLookupError as e:
         print(f"Column error caught: {e}")
 
     # Test row index out of range
@@ -169,7 +163,7 @@ def demo_error_handling():
         data = [["Name", "Age"], ["Alice", "25"]]
         model = TabularDataModel(data)
         model.cell_value("Name", 10)  # Use cell_value which has bounds checking
-    except SplurgeTabularRowError as e:
+    except SplurgeTabularLookupError as e:
         print(f"Row error caught: {e}")
 
 
@@ -177,22 +171,11 @@ def demo_utility_functions():
     """Demonstrate utility functions."""
     print("\n=== Utility Functions Demo ===")
 
-    # Test data validation
-    print("Data validation:")
-    valid_data = [["Name", "Age"], ["Alice", "25"]]
-    try:
-        validate_data_structure(valid_data, expected_type=list, param_name="test_data")
-        print("✓ Data structure is valid")
-    except SplurgeTabularValidationError as e:
-        print(f"✗ Validation failed: {e}")
-
     # Test minimum columns check
     print("\nMinimum columns check:")
     data_with_few_columns = [["Name"], ["Alice"]]
-    try:
-        ensure_minimum_columns(data_with_few_columns, min_columns=2)
-    except SplurgeTabularValidationError as e:
-        print(f"✗ Minimum columns check failed: {e}")
+    padded_data = ensure_minimum_columns(data_with_few_columns, min_columns=2)
+    print(f"Padded data: {padded_data}")
 
     # Test header processing utility
     print("\nHeader processing:")
@@ -207,26 +190,6 @@ def demo_utility_functions():
     normalized = normalize_rows(uneven_rows, skip_empty_rows=False)
     print(f"Original: {uneven_rows}")
     print(f"Normalized: {normalized}")
-
-
-def demo_file_operations():
-    """Demonstrate file operation utilities."""
-    print("\n=== File Operations Demo ===")
-
-    # Test safe file operation
-    try:
-        # This will work with existing files
-        test_path = Path(__file__).parent / "api_usage.py"
-        safe_path = safe_file_operation(test_path)
-        print(f"✓ Safe file path: {safe_path}")
-    except Exception as e:
-        print(f"File operation error: {e}")
-
-    # Test with invalid path
-    try:
-        safe_file_operation(123)  # type: ignore
-    except SplurgeTabularTypeError as e:
-        print(f"✓ Invalid path type caught: {e}")
 
 
 def demo_advanced_features():
@@ -276,7 +239,6 @@ def main():
     demo_streaming_tabular_data_model()
     demo_error_handling()
     demo_utility_functions()
-    demo_file_operations()
     demo_advanced_features()
 
     print("\n" + "=" * 60)

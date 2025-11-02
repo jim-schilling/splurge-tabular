@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "splurge-tabular"
-version = "2025.1.0"
+version = "2025.2.0"
 description = "A Python library for tabular data processing with in-memory and streaming support"
 readme = "README.md"
 license = "MIT"
@@ -30,9 +30,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
-dependencies = [
-    "splurge-typer>=2025.1.0",
-]
+dependencies = []
 
 [project.urls]
 Homepage = "https://github.com/jim-schilling/splurge-tabular"
@@ -44,21 +42,15 @@ Changelog = "https://github.com/jim-schilling/splurge-tabular/blob/main/CHANGELO
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
-    "pytest-xdist>=3.0.0",
     "ruff>=0.1.0",
     "mypy>=1.0.0",
     "pytest-mock>=3.0.0",
     "pre-commit>=3.0.0",
     "hypothesis>=6.0.0",
 ]
-cli = [
-    "typer>=0.9.0",
-    "rich>=13.0.0",
-]
 
-[tool.setuptools]
-zip-safe = false
-include-package-data = true
+[project.scripts]
+splurge-tabular = "splurge_tabular.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -96,40 +88,64 @@ known-first-party = ["splurge_tabular"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-x -v -n 4"
+addopts = "-x -v"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 
 [tool.coverage.run]
-source = ["splurge_tabular"]
+source = ["splurge_typer"]
 omit = [
     "*/tests/*",
-    "*/test_*.py",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/env/*",
+    "*/_vendor/*"
 ]
 
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
-    "if self.debug:",
-    "if settings.DEBUG",
     "raise AssertionError",
     "raise NotImplementedError",
-    "if 0:",
     "if __name__ == .__main__.:",
-    "class .*\\bProtocol\\):",
-    "@(abc\\.)?abstractmethod",
+    "class .*\\\\bProtocol\\):",
+    "@(abc\\\\.)?abstractmethod",
+]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/env/*",
+    "*/_vendor/*",
 ]
 
 [tool.mypy]
-# Only run mypy against the splurge_tabular package
-files = ["splurge_tabular"]
-# show_error_codes helps with diagnostics
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unreachable = true
+strict_equality = true
 show_error_codes = true
- # Treat third-party packages without stubs/py.typed as untyped so imports don't error
- ignore_missing_imports = true
- # Keep import following quiet for third-party libs
- follow_imports = "silent"
+# Allow missing imports for vendored/external helper package used at runtime
+ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["examples.*"]
+check_untyped_defs = false
+disallow_untyped_defs = false

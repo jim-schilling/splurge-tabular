@@ -12,14 +12,13 @@ This module is licensed under the MIT License.
 
 from collections.abc import Generator, Iterator
 
-from splurge_tabular.error_codes import ErrorCode
-from splurge_tabular.exceptions import (
-    SplurgeTabularColumnError,
-    SplurgeTabularConfigurationError,
+from .exceptions import (
+    SplurgeTabularLookupError,
     SplurgeTabularTypeError,
+    SplurgeTabularValueError,
 )
-from splurge_tabular.protocols import StreamingTabularDataProtocol
-from splurge_tabular.tabular_utils import process_headers as _process_headers
+from .protocols import StreamingTabularDataProtocol
+from .tabular_utils import process_headers as _process_headers
 
 
 class StreamingTabularDataModel(StreamingTabularDataProtocol):
@@ -56,29 +55,23 @@ class StreamingTabularDataModel(StreamingTabularDataProtocol):
             chunk_size (int): Maximum number of rows to keep in memory buffer (minimum 100).
 
         Raises:
-            SplurgeTypeError: If stream is None.
-            SplurgeValueError: If header_rows or chunk_size is invalid.
+            SplurgeTabularTypeError: If stream is None.
+            SplurgeTabularValueError: If header_rows or chunk_size is invalid.
         """
         if stream is None:
-            msg = "Stream is required"
             raise SplurgeTabularTypeError(
-                msg,
-                error_code=ErrorCode.TYPE_INVALID,
-                context={"param": "stream"},
+                message="Stream is required",
+                details={"param": "stream"},
             )
         if header_rows < 0:
-            msg = "Header rows must be greater than or equal to 0"
-            raise SplurgeTabularConfigurationError(
-                msg,
-                error_code=ErrorCode.CONFIG_INVALID,
-                context={"param": "header_rows", "value": str(header_rows)},
+            raise SplurgeTabularValueError(
+                message="Header rows must be greater than or equal to 0",
+                details={"param": "header_rows", "value": str(header_rows)},
             )
         if chunk_size < self.MIN_CHUNK_SIZE:
-            msg = f"chunk_size must be at least {self.MIN_CHUNK_SIZE}"
-            raise SplurgeTabularConfigurationError(
-                msg,
-                error_code=ErrorCode.CONFIG_INVALID,
-                context={"param": "chunk_size", "value": str(chunk_size)},
+            raise SplurgeTabularValueError(
+                message=f"Chunk size must be at least {self.MIN_CHUNK_SIZE}",
+                details={"param": "chunk_size", "value": str(chunk_size)},
             )
 
         self._stream = stream
@@ -162,27 +155,27 @@ class StreamingTabularDataModel(StreamingTabularDataProtocol):
         """Get the column index for a given name.
 
         Args:
-            name: Column name.
+            name (str): Column name.
 
         Returns:
-            Zero-based index of the column.
+            int: Zero-based index of the column.
 
         Raises:
-            SplurgeTabularColumnError: If column name is not found.
+            SplurgeTabularLookupError: If column name is not found.
         """
-        if name not in self._column_index_map:
-            msg = f"Column name {name} not found"
-            raise SplurgeTabularColumnError(
-                msg,
-                error_code=ErrorCode.COLUMN_NOT_FOUND,
-                context={"column": name},
+        if name not in self.column_names:
+            raise SplurgeTabularLookupError(
+                message=f"Column name {name} not found",
+                details={"name": name},
             )
         return self._column_index_map[name]
 
     @property
     def column_count(self) -> int:
-        """
-        Number of columns.
+        """Get the number of columns.
+
+        Returns:
+            int: Number of columns in the dataset.
         """
         return len(self._column_names)
 
@@ -191,6 +184,9 @@ class StreamingTabularDataModel(StreamingTabularDataProtocol):
 
         Yields rows as lists of strings. New column names are auto-created if
         later rows contain more columns than the current header.
+
+        Yields:
+            list[str]: Rows as lists of strings.
         """
         # Yield buffered rows first
         for row in self._buffer:
@@ -225,28 +221,38 @@ class StreamingTabularDataModel(StreamingTabularDataProtocol):
                 yield row_copy
 
     def iter_rows(self) -> Generator[dict[str, str], None, None]:
-        """
-        Iterate over rows as dictionaries.
+        """Iterate over rows as dictionaries.
+
+        Yields:
+            dict[str, str]: Rows as dictionaries with column names as keys.
         """
         for row in self:
             yield dict(zip(self._column_names, row, strict=False))
 
     def iter_rows_as_tuples(self) -> Generator[tuple[str, ...], None, None]:
-        """
-        Iterate over rows as tuples.
+        """Iterate over rows as tuples.
+
+        Yields:
+            tuple[str, ...]: Rows as tuples of values.
         """
         for row in self:
             yield tuple(row)
 
     def clear_buffer(self) -> None:
-        """
-        Clear the current buffer to free memory.
+        """Clear the current buffer to free memory.
+
+        This method clears any buffered rows, allowing memory to be freed.
+        Note that buffered rows will not be available for iteration after
+        calling this method.
         """
         self._buffer.clear()
 
     def reset_stream(self) -> None:
-        """
-        Reset the stream position (requires a new stream iterator).
+        """Reset the stream position.
+
+        This method clears the buffer and resets initialization state. Note that
+        this does not actually reset the underlying stream iterator - you must
+        provide a new stream iterator if you want to re-read from the beginning.
         """
         self._buffer.clear()
         self._is_initialized = False

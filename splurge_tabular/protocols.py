@@ -14,7 +14,7 @@ This module is licensed under the MIT License.
 from collections.abc import Generator, Iterator
 from typing import Protocol, runtime_checkable
 
-from splurge_typer.data_type import DataType
+from ._vendor.splurge_typer.data_type import DataType
 
 
 @runtime_checkable
@@ -32,7 +32,7 @@ class TabularDataProtocol(Protocol):
         Returns:
             list[str]: Column names in their defined order.
         """
-        ...
+        ...  # pragma: no cover
 
     @property
     def row_count(self) -> int:
@@ -41,7 +41,7 @@ class TabularDataProtocol(Protocol):
         Returns:
             int: Number of rows in the dataset.
         """
-        ...
+        ...  # pragma: no cover
 
     @property
     def column_count(self) -> int:
@@ -50,7 +50,7 @@ class TabularDataProtocol(Protocol):
         Returns:
             int: Number of columns in the dataset.
         """
-        ...
+        ...  # pragma: no cover
 
     def column_index(self, name: str) -> int:
         """Get the zero-based index of a column by name.
@@ -61,7 +61,7 @@ class TabularDataProtocol(Protocol):
         Returns:
             int: Zero-based index of the column.
         """
-        ...
+        ...  # pragma: no cover
 
     def column_type(self, name: str) -> DataType:
         """Get the inferred data type of a column.
@@ -72,7 +72,7 @@ class TabularDataProtocol(Protocol):
         Returns:
             DataType: Inferred data type for the column.
         """
-        ...
+        ...  # pragma: no cover
 
     def column_values(self, name: str) -> list[str]:
         """Return all values for a specific column.
@@ -83,7 +83,7 @@ class TabularDataProtocol(Protocol):
         Returns:
             list[str]: All values in the column.
         """
-        ...
+        ...  # pragma: no cover
 
     def cell_value(self, name: str, row_index: int) -> str:
         """Return the value of a specific cell.
@@ -95,7 +95,7 @@ class TabularDataProtocol(Protocol):
         Returns:
             str: Value at the specified cell.
         """
-        ...
+        ...  # pragma: no cover
 
     def row(self, index: int) -> dict[str, str]:
         """Return a row as a dictionary.
@@ -106,7 +106,7 @@ class TabularDataProtocol(Protocol):
         Returns:
             dict[str, str]: Row data mapping column names to values.
         """
-        ...
+        ...  # pragma: no cover
 
     def row_as_list(self, index: int) -> list[str]:
         """Return a row as a list of values.
@@ -117,7 +117,7 @@ class TabularDataProtocol(Protocol):
         Returns:
             list[str]: Row data as a list.
         """
-        ...
+        ...  # pragma: no cover
 
     def row_as_tuple(self, index: int) -> tuple[str, ...]:
         """Return a row as a tuple of values.
@@ -128,7 +128,7 @@ class TabularDataProtocol(Protocol):
         Returns:
             tuple[str, ...]: Row data as a tuple.
         """
-        ...
+        ...  # pragma: no cover
 
     def __iter__(self) -> Iterator[list[str]]:
         """Iterate over rows as lists of strings.
@@ -136,7 +136,7 @@ class TabularDataProtocol(Protocol):
         Returns:
             Iterator[list[str]]: Iterator yielding rows as lists of strings.
         """
-        ...
+        ...  # pragma: no cover
 
     def iter_rows(self) -> Generator[dict[str, str], None, None]:
         """Iterate over rows as dictionaries.
@@ -144,7 +144,7 @@ class TabularDataProtocol(Protocol):
         Returns:
             Generator[dict[str, str], None, None]: Generator yielding rows as dictionaries with column names as keys.
         """
-        ...
+        ...  # pragma: no cover
 
     def iter_rows_as_tuples(self) -> Generator[tuple[str, ...], None, None]:
         """Iterate over rows as tuples.
@@ -152,7 +152,7 @@ class TabularDataProtocol(Protocol):
         Returns:
             Generator[tuple[str, ...], None, None]: Generator yielding rows as tuples of values.
         """
-        ...
+        ...  # pragma: no cover
 
 
 @runtime_checkable
@@ -170,7 +170,7 @@ class StreamingTabularDataProtocol(Protocol):
         Returns:
             list[str]: Column names in their defined order.
         """
-        ...
+        ...  # pragma: no cover
 
     @property
     def column_count(self) -> int:
@@ -179,7 +179,7 @@ class StreamingTabularDataProtocol(Protocol):
         Returns:
             int: Number of columns in the dataset.
         """
-        ...
+        ...  # pragma: no cover
 
     def column_index(self, name: str) -> int:
         """Get the zero-based index of a column by name.
@@ -190,7 +190,7 @@ class StreamingTabularDataProtocol(Protocol):
         Returns:
             int: Zero-based index of the column.
         """
-        ...
+        ...  # pragma: no cover
 
     def __iter__(self) -> Iterator[list[str]]:
         """Iterate over rows as lists of strings.
@@ -198,7 +198,7 @@ class StreamingTabularDataProtocol(Protocol):
         Returns:
             Iterator[list[str]]: Iterator yielding rows as lists of strings.
         """
-        ...
+        ...  # pragma: no cover
 
     def iter_rows(self) -> Generator[dict[str, str], None, None]:
         """Iterate over rows as dictionaries.
@@ -206,7 +206,7 @@ class StreamingTabularDataProtocol(Protocol):
         Returns:
             Generator[dict[str, str], None, None]: Generator yielding rows as dictionaries with column names as keys.
         """
-        ...
+        ...  # pragma: no cover
 
     def iter_rows_as_tuples(self) -> Generator[tuple[str, ...], None, None]:
         """Iterate over rows as tuples.
@@ -214,18 +214,18 @@ class StreamingTabularDataProtocol(Protocol):
         Returns:
             Generator[tuple[str, ...], None, None]: Generator yielding rows as tuples of values.
         """
-        ...
+        ...  # pragma: no cover
 
     def clear_buffer(self) -> None:
         """Clear any buffered data.
 
         This method should clear any internal buffers used for streaming data.
         """
-        ...
+        ...  # pragma: no cover
 
     def reset_stream(self) -> None:
         """Reset the stream to the beginning.
 
         This method should reset the stream position to allow re-reading from the start.
         """
-        ...
+        ...  # pragma: no cover
