@@ -5,15 +5,9 @@ Tests the main TabularDataModel class.
 """
 
 import pytest
-from splurge_typer.data_type import DataType
 
-from splurge_tabular.exceptions import (
-    SplurgeTabularColumnError,
-    SplurgeTabularRowError,
-    SplurgeTabularTypeError,
-    SplurgeTabularValidationError,
-    SplurgeTabularValueError,
-)
+from splurge_tabular._vendor.splurge_typer.data_type import DataType
+from splurge_tabular.exceptions import SplurgeTabularLookupError, SplurgeTabularTypeError, SplurgeTabularValueError
 from splurge_tabular.tabular_data_model import TabularDataModel
 
 
@@ -31,7 +25,7 @@ class TestTabularDataModel:
 
     def test_empty_data_raises_error(self):
         """Test that empty data raises an error."""
-        with pytest.raises(SplurgeTabularValidationError):
+        with pytest.raises(SplurgeTabularValueError):
             TabularDataModel([])
 
     def test_single_row_data(self):
@@ -90,7 +84,7 @@ class TestTabularDataModel:
         data = [["Name", "Age", "City"]]
         model = TabularDataModel(data)
 
-        with pytest.raises(SplurgeTabularColumnError):
+        with pytest.raises(SplurgeTabularLookupError):
             model.column_index("Invalid")
 
     def test_column_type_inference(self):
@@ -100,13 +94,9 @@ class TestTabularDataModel:
 
         # These would need actual type inference implementation
         # For now, just test that the method exists
-        try:
-            _age_type = model.column_type("Age")
-            _score_type = model.column_type("Score")
-            # Types would depend on the inference implementation
-        except Exception:
-            # Type inference may not be fully implemented yet
-            pass
+        _age_type = model.column_type("Age")
+        _score_type = model.column_type("Score")
+        # Types would depend on the inference implementation
 
     def test_column_values(self):
         """Test getting all values for a column."""
@@ -149,7 +139,7 @@ class TestTabularDataModel:
         data = [["Name", "Age"], ["John", "30"]]
         model = TabularDataModel(data)
 
-        with pytest.raises(SplurgeTabularRowError):
+        with pytest.raises(SplurgeTabularLookupError):
             model.cell_value("Name", 5)
 
     def test_iter_rows(self):
@@ -186,7 +176,7 @@ class TestTabularDataModel:
         data = [["Name", "Age"], ["John", "30"]]
         model = TabularDataModel(data)
 
-        with pytest.raises(IndexError):
+        with pytest.raises(SplurgeTabularLookupError):
             model.row(5)
 
     def test_row_as_list(self):
@@ -239,13 +229,9 @@ class TestTabularDataModel:
         typed_view = model.to_typed()
 
         # This will depend on the type inference implementation
-        try:
-            _name_values = typed_view.column_values("Name")
-            _age_values = typed_view.column_values("Age")
-            # Values should be typed appropriately
-        except Exception:
-            # Type conversion may not be fully implemented
-            pass
+        _name_values = typed_view.column_values("Name")
+        _age_values = typed_view.column_values("Age")
+        # Values should be typed appropriately
 
     def test_typed_view_cell_value(self):
         """Test typed view cell value."""
@@ -253,13 +239,9 @@ class TestTabularDataModel:
         model = TabularDataModel(data)
         typed_view = model.to_typed()
 
-        try:
-            _name_value = typed_view.cell_value("Name", 0)
-            _age_value = typed_view.cell_value("Age", 0)
-            # Values should be typed appropriately
-        except Exception:
-            # Type conversion may not be fully implemented
-            pass
+        _name_value = typed_view.cell_value("Name", 0)
+        _age_value = typed_view.cell_value("Age", 0)
+        # Values should be typed appropriately
 
     def test_typed_view_row(self):
         """Test typed view row access."""
@@ -267,12 +249,8 @@ class TestTabularDataModel:
         model = TabularDataModel(data)
         typed_view = model.to_typed()
 
-        try:
-            _row = typed_view.row(0)
-            # Row should be a typed dictionary
-        except Exception:
-            # Type conversion may not be fully implemented
-            pass
+        _row = typed_view.row(0)
+        # Row should be a typed dictionary
 
     def test_typed_view_iteration(self):
         """Test typed view iteration."""
@@ -280,12 +258,8 @@ class TestTabularDataModel:
         model = TabularDataModel(data)
         typed_view = model.to_typed()
 
-        try:
-            _rows = list(typed_view)
-            # Rows should be typed lists
-        except Exception:
-            # Type conversion may not be fully implemented
-            pass
+        _rows = list(typed_view)
+        # Rows should be typed lists
 
     def test_init_invalid_header_rows_type(self):
         """Test __init__ with invalid header_rows type."""
@@ -338,25 +312,20 @@ class TestTabularDataModel:
         typed_view = model.to_typed(type_configs=type_configs)
 
         # Test the behavior through public API - check that empty values use our custom defaults
-        try:
-            # Empty age should use custom integer default
-            age_val = typed_view.cell_value("Age", 0)
-            if isinstance(age_val, int):
-                assert age_val == 999
+        # Empty age should use custom integer default
+        age_val = typed_view.cell_value("Age", 0)
+        if isinstance(age_val, int):
+            assert age_val == 999
 
-            # Empty active should use custom boolean default
-            active_val = typed_view.cell_value("Active", 1)
-            if isinstance(active_val, bool):
-                assert not active_val
+        # Empty active should use custom boolean default
+        active_val = typed_view.cell_value("Active", 1)
+        if isinstance(active_val, bool):
+            assert not active_val
 
-            # Empty name should use custom string default
-            name_val = typed_view.cell_value("Name", 0)
-            if name_val == "N/A":
-                assert name_val == "N/A"
-
-        except Exception:
-            # Type conversion may not be fully implemented
-            pass
+        # Empty name should use custom string default
+        name_val = typed_view.cell_value("Name", 0)
+        if name_val == "N/A":
+            assert name_val == "N/A"
 
     def test_typed_view_column_index(self):
         """Test _TypedView.column_index method."""
@@ -368,7 +337,7 @@ class TestTabularDataModel:
         assert typed_view.column_index("Age") == 1
         assert typed_view.column_index("City") == 2
 
-        with pytest.raises(SplurgeTabularColumnError):
+        with pytest.raises(SplurgeTabularLookupError):
             typed_view.column_index("Invalid")
 
     def test_typed_view_iteration_methods(self):
@@ -401,11 +370,11 @@ class TestTabularDataModel:
         typed_view = model.to_typed()
 
         # Test row_as_list with invalid index
-        with pytest.raises(SplurgeTabularRowError):
+        with pytest.raises(SplurgeTabularLookupError):
             typed_view.row_as_list(5)
 
         # Test row_as_tuple with invalid index
-        with pytest.raises(SplurgeTabularRowError):
+        with pytest.raises(SplurgeTabularLookupError):
             typed_view.row_as_tuple(5)
 
     def test_typed_view_type_conversion_comprehensive(self):
@@ -419,23 +388,18 @@ class TestTabularDataModel:
 
         # Test various type conversions
         # Note: These tests depend on the actual type inference working
-        try:
-            # Test integer conversion
-            _age_val = typed_view.cell_value("Age", 0)
+        # Test integer conversion
+        _age_val = typed_view.cell_value("Age", 0)
 
-            # Test boolean conversion
-            _active_val = typed_view.cell_value("Active", 0)
+        # Test boolean conversion
+        _active_val = typed_view.cell_value("Active", 0)
 
-            # Test float conversion
-            _score_val = typed_view.cell_value("Score", 0)
+        # Test float conversion
+        _score_val = typed_view.cell_value("Score", 0)
 
-            # Test string (should remain string)
-            name_val = typed_view.cell_value("Name", 0)
-            assert isinstance(name_val, str)
-
-        except Exception:
-            # Type conversion may not be fully implemented
-            pass
+        # Test string (should remain string)
+        name_val = typed_view.cell_value("Name", 0)
+        assert isinstance(name_val, str)
 
     def test_typed_view_empty_and_none_handling(self):
         """Test _TypedView handling of empty and none-like values."""
@@ -448,19 +412,14 @@ class TestTabularDataModel:
         model = TabularDataModel(data)
         typed_view = model.to_typed()
 
-        try:
-            # Test empty value handling
-            empty_name = typed_view.cell_value("Name", 0)
-            _empty_age = typed_view.cell_value("Age", 1)
-            _empty_score = typed_view.cell_value("Score", 2)
+        # Test empty value handling
+        empty_name = typed_view.cell_value("Name", 0)
+        _empty_age = typed_view.cell_value("Age", 1)
+        _empty_score = typed_view.cell_value("Score", 2)
 
-            # Should use configured defaults for empty values
-            assert empty_name == ""  # Default for STRING empty
-            # Age and score defaults depend on type inference
-
-        except Exception:
-            # Type conversion may not be fully implemented
-            pass
+        # Should use configured defaults for empty values
+        assert empty_name == ""  # Default for STRING empty
+        # Age and score defaults depend on type inference
 
     def test_typed_view_column_type_caching(self):
         """Test _TypedView.column_type method with caching."""
@@ -469,22 +428,17 @@ class TestTabularDataModel:
         typed_view = model.to_typed()
 
         # First call should compute and cache
-        try:
-            type1 = typed_view.column_type("Age")
+        type1 = typed_view.column_type("Age")
 
-            # Second call should use cache
-            type2 = typed_view.column_type("Age")
+        # Second call should use cache
+        type2 = typed_view.column_type("Age")
 
-            # Should be the same
-            assert type1 == type2
+        # Should be the same
+        assert type1 == type2
 
-            # Test that repeated calls work consistently (indicates caching)
-            for _ in range(5):
-                assert typed_view.column_type("Age") == type1
-
-        except Exception:
-            # Type inference may not be fully implemented
-            pass
+        # Test that repeated calls work consistently (indicates caching)
+        for _ in range(5):
+            assert typed_view.column_type("Age") == type1
 
     def test_edge_cases_empty_rows_after_header(self):
         """Test edge case with empty rows after header processing."""
@@ -587,21 +541,16 @@ class TestTabularDataModel:
             [""],  # Empty
             ["N/A"],  # None-like
         ]
-        model = TabularDataModel(data)
+        model = TabularDataModel(data, skip_empty_rows=False)
         typed_view = model.to_typed()
 
-        try:
-            # Test MIXED type handling
-            text_val = typed_view.cell_value("Mixed", 0)
-            _empty_val = typed_view.cell_value("Mixed", 1)
-            _none_val = typed_view.cell_value("Mixed", 2)
+        # Test MIXED type handling
+        text_val = typed_view.cell_value("Mixed", 0)
+        _empty_val = typed_view.cell_value("Mixed", 1)
+        _none_val = typed_view.cell_value("Mixed", 2)
 
-            # These should follow MIXED type rules
-            assert isinstance(text_val, str)
-
-        except Exception:
-            # Type conversion may not be fully implemented
-            pass
+        # These should follow MIXED type rules
+        assert isinstance(text_val, str)
 
     def test_typed_view_time_and_datetime_conversion(self):
         """Test _TypedView TIME and DATETIME type conversion."""
@@ -610,21 +559,16 @@ class TestTabularDataModel:
             ["14:30:00", "2023-01-01T14:30:00"],
             ["", ""],  # Empty values
         ]
-        model = TabularDataModel(data)
+        model = TabularDataModel(data, skip_empty_rows=False)
         typed_view = model.to_typed()
 
-        try:
-            # Test TIME and DATETIME conversion
-            _time_val = typed_view.cell_value("Time", 0)
-            _datetime_val = typed_view.cell_value("DateTime", 0)
+        # Test TIME and DATETIME conversion
+        _time_val = typed_view.cell_value("Time", 0)
+        _datetime_val = typed_view.cell_value("DateTime", 0)
 
-            # Test empty handling
-            _empty_time = typed_view.cell_value("Time", 1)
-            _empty_datetime = typed_view.cell_value("DateTime", 1)
-
-        except Exception:
-            # Type conversion may not be fully implemented
-            pass
+        # Test empty handling
+        _empty_time = typed_view.cell_value("Time", 1)
+        _empty_datetime = typed_view.cell_value("DateTime", 1)
 
     def test_typed_view_fallback_conversion(self):
         """Test _TypedView fallback conversion for unknown types."""
@@ -632,14 +576,9 @@ class TestTabularDataModel:
         model = TabularDataModel(data)
         typed_view = model.to_typed()
 
-        try:
-            # Test fallback (return value as-is)
-            val = typed_view.cell_value("Unknown", 0)
-            assert isinstance(val, str)
-
-        except Exception:
-            # Type conversion may not be fully implemented
-            pass
+        # Test fallback (return value as-is)
+        val = typed_view.cell_value("Unknown", 0)
+        assert isinstance(val, str)
 
     def test_typed_view_column_type_inference_edge_cases(self):
         """Test _TypedView.column_type with various edge cases."""
@@ -654,17 +593,12 @@ class TestTabularDataModel:
         model = TabularDataModel(data)
         typed_view = model.to_typed()
 
-        try:
-            # Should prefer non-empty values for type inference
-            _col_type = typed_view.column_type("Mixed")
+        # Should prefer non-empty values for type inference
+        _col_type = typed_view.column_type("Mixed")
 
-            # Cache should be populated
-            assert hasattr(typed_view, "_typed_column_types")
-            assert "Mixed" in typed_view._typed_column_types
-
-        except Exception:
-            # Type inference may not be fully implemented
-            pass
+        # Cache should be populated
+        assert hasattr(typed_view, "_typed_column_types")
+        assert "Mixed" in typed_view._typed_column_types
 
     def test_typed_view_mixed_type_none_like_values(self):
         """Test _TypedView MIXED type with none-like values."""
@@ -677,15 +611,10 @@ class TestTabularDataModel:
         model = TabularDataModel(data)
         typed_view = model.to_typed()
 
-        try:
-            # Test none-like handling in MIXED type
-            _null_val = typed_view.cell_value("Mixed", 0)
-            _na_val = typed_view.cell_value("Mixed", 1)
-            _text_val = typed_view.cell_value("Mixed", 2)
-
-        except Exception:
-            # Type conversion may not be fully implemented
-            pass
+        # Test none-like handling in MIXED type
+        _null_val = typed_view.cell_value("Mixed", 0)
+        _na_val = typed_view.cell_value("Mixed", 1)
+        _text_val = typed_view.cell_value("Mixed", 2)
 
     def test_typed_view_datetime_inference(self):
         """Test _TypedView with data that should infer as DATETIME."""
@@ -693,10 +622,5 @@ class TestTabularDataModel:
         model = TabularDataModel(data)
         typed_view = model.to_typed()
 
-        try:
-            # This should trigger DATETIME type conversion
-            _dt_val = typed_view.cell_value("DateTime", 0)
-
-        except Exception:
-            # Type inference may not be fully implemented
-            pass
+        # This should trigger DATETIME type conversion
+        _dt_val = typed_view.cell_value("DateTime", 0)

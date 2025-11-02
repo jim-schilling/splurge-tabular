@@ -10,9 +10,9 @@
 
 A modern, high-performance Python library for tabular data processing with both in-memory and streaming capabilities.
 
-> ⚠️ Release notice — Breaking changes in 2025.1.0
+> ⚠️ Release notice — Breaking changes in 2025.2.0
 >
-> The 2025.1.0 release introduces breaking changes to the exceptions and error codes raised by this library. Callers that depend on exact exception classes, message text, or literal error-code strings may need to update their code.
+> The 2025.2.0 release introduces breaking changes to the exceptions and error codes raised by this library. Callers that depend on exact exception classes, message text, or literal error-code strings may need to update their code.
 >
 > Key changes:
 >
@@ -25,7 +25,7 @@ A modern, high-performance Python library for tabular data processing with both 
 > - Inspect raised exceptions for `error_code` (recommended) rather than parsing messages.
 > - See `docs/API-REFERENCE.md` (ErrorCode section) and `CHANGELOG.md` for the full list of changed codes and examples.
 >
-> If you rely on the previous exception shapes or messages and need help migrating, open an issue or consult the API reference in `docs/` or the detailed migration guide: `docs/notes/MIGRATION-TO-2025.1.0.md`.
+> If you rely on the previous exception shapes or messages and need help migrating, open an issue or consult the API reference in `docs/` or the detailed migration guide: `docs/notes/MIGRATION-TO-2025.2.0.md`.
 
 ## ✨ Features
 

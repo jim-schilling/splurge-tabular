@@ -8,18 +8,20 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from splurge_tabular import (
     SplurgeTabularError,
-    SplurgeTabularValidationError,
+    SplurgeTabularLookupError,
+    SplurgeTabularTypeError,
+    SplurgeTabularValueError,
     StreamingTabularDataModel,
+    StreamingTabularDataProtocol,
     TabularDataModel,
+    TabularDataProtocol,
     ensure_minimum_columns,
     normalize_rows,
     process_headers,
-    validate_data_structure,
 )
+from splurge_tabular._vendor.splurge_typer.data_type import DataType
 
 
 class TestEndToEndWorkflows:
@@ -47,12 +49,9 @@ Bob,35,Paris"""
             rows = [line.split(",") for line in lines[1:] if line.strip()]
 
             # Process headers
-            processed_header_data, column_names = process_headers([headers], header_rows=1)
+            processed_header_data, _column_names = process_headers([headers], header_rows=1)
             # Normalize rows
             normalized_rows = normalize_rows(rows, skip_empty_rows=True)
-
-            # Validate structure
-            validate_data_structure(normalized_rows, expected_type=list)
 
             # Ensure minimum columns
             ensure_minimum_columns(normalized_rows, 2)
@@ -92,7 +91,6 @@ Bob,35,Paris"""
                 # Process through pipeline
                 processed_header_data, column_names = process_headers([headers], header_rows=1)
                 normalized_rows = normalize_rows(rows, skip_empty_rows=True)
-                validate_data_structure(normalized_rows, expected_type=list)
                 ensure_minimum_columns(normalized_rows, 2)
 
                 model = TabularDataModel([processed_header_data[0]] + normalized_rows)
@@ -139,19 +137,208 @@ Bob,35,Paris"""
 
     def test_error_handling_in_complete_workflow(self) -> None:
         """Test error handling in complete data processing workflow."""
-        # Test with invalid file
-        with pytest.raises(FileNotFoundError):
-            Path("nonexistent_file.csv").read_text()
-
-        # Test with invalid data structure
-        invalid_rows = []  # Empty data
-        with pytest.raises(SplurgeTabularValidationError):
-            validate_data_structure(invalid_rows, expected_type=list, allow_empty=False)
 
         # Test minimum columns requirement - this doesn't raise, it pads
         single_column_row = ["a"]
         padded_row = ensure_minimum_columns(single_column_row, 2)
         assert len(padded_row) == 2
+
+    def test_typed_view_complete_workflow(self) -> None:
+        """Test complete typed view workflow from raw data to typed access."""
+        # Raw data with mixed types
+        raw_data = [
+            ["Name", "Age", "Salary", "Active"],
+            ["Alice", "28", "75000.50", "true"],
+            ["Bob", "35", "82000", "false"],
+        ]
+
+        # Create model and convert to typed
+        model = TabularDataModel(raw_data)
+        typed_model = model.to_typed()
+
+        # Verify type inference
+        assert typed_model.column_type("Age") == DataType.INTEGER
+        assert typed_model.column_type("Salary") == DataType.FLOAT
+        assert typed_model.column_type("Active") == DataType.BOOLEAN
+
+        # Verify typed access
+        for row in typed_model.iter_rows():
+            assert isinstance(row["Age"], int)
+            assert isinstance(row["Salary"], float)
+            assert isinstance(row["Active"], bool)
+
+    def test_multiple_header_rows_workflow(self) -> None:
+        """Test processing data with multiple header rows."""
+        data = [
+            ["Personal Info", "", "Employment", ""],
+            ["Name", "Age", "Company", "Salary"],
+            ["Alice", "28", "Tech Corp", "75000"],
+        ]
+
+        model = TabularDataModel(data, header_rows=2)
+        # Multiple header rows are merged with underscores
+        assert model.column_names == ["Personal Info_Name", "Age", "Employment_Company", "Salary"]
+        assert model.row_count == 1
+        # Verify merged headers were processed correctly
+        assert model.row(0) == {
+            "Personal Info_Name": "Alice",
+            "Age": "28",
+            "Employment_Company": "Tech Corp",
+            "Salary": "75000",
+        }
+
+    def test_empty_row_handling_workflow(self) -> None:
+        """Test empty row handling in complete workflow."""
+        data = [
+            ["Name", "Age"],
+            ["Alice", "28"],
+            ["", ""],  # Empty row
+            ["Bob", "35"],
+        ]
+
+        # Test skipping empty rows
+        model_skip = TabularDataModel(data, skip_empty_rows=True)
+        assert model_skip.row_count == 2
+
+        # Test preserving empty rows
+        model_keep = TabularDataModel(data, skip_empty_rows=False)
+        assert model_keep.row_count == 3
+
+    def test_comprehensive_exception_handling_workflow(self) -> None:
+        """Test exception handling in complete workflows."""
+        # Test type errors
+        try:
+            TabularDataModel("not a list")  # type: ignore[arg-type]
+        except SplurgeTabularTypeError as e:
+            assert hasattr(e, "details")
+            assert e.details.get("param") == "data"
+
+        # Test value errors
+        try:
+            TabularDataModel([])
+        except SplurgeTabularValueError as e:
+            assert e.details.get("param") == "data"
+
+        # Test lookup errors
+        model = TabularDataModel([["Name"], ["Alice"]])
+        try:
+            model.column_index("Missing")
+        except SplurgeTabularLookupError as e:
+            assert "name" in e.details or "column" in e.details
+
+    def test_chunked_streaming_workflow(self) -> None:
+        """Test streaming model with multiple chunks."""
+
+        def create_chunked_stream():
+            yield [["Name", "Age"], ["Alice", "28"], ["Bob", "35"]]
+            yield [["Charlie", "22"], ["Diana", "31"]]
+            yield [["Eve", "29"]]
+
+        streaming_model = StreamingTabularDataModel(create_chunked_stream())
+
+        rows = list(streaming_model)
+        assert len(rows) == 5
+        assert rows[0] == ["Alice", "28"]
+        assert rows[-1] == ["Eve", "29"]
+
+    def test_stream_reset_workflow(self) -> None:
+        """Test resetting stream buffer and re-reading with new iterator."""
+
+        # Create a stream generator function that can be called multiple times
+        def create_stream():
+            yield [["name", "age"], ["Alice", "28"], ["Bob", "35"]]
+
+        # First read
+        model1 = StreamingTabularDataModel(create_stream())
+        first_read = list(model1)
+        assert len(first_read) == 2
+
+        # Reset clears buffer and resets state, but requires new iterator to re-read
+        model1.reset_stream()
+        assert len(model1._buffer) == 0  # Buffer cleared
+        assert not model1._is_initialized  # State reset
+
+        # Create new model with new iterator to simulate re-reading
+        model2 = StreamingTabularDataModel(create_stream())
+        second_read = list(model2)
+        assert first_read == second_read
+
+    def test_protocol_compliance_workflow(self) -> None:
+        """Test that models correctly implement protocols."""
+        data = [["Name", "Age"], ["Alice", "28"]]
+
+        # Test TabularDataModel protocol compliance
+        memory_model = TabularDataModel(data)
+        assert isinstance(memory_model, TabularDataProtocol)
+
+        # Test StreamingTabularDataModel protocol compliance
+        streaming_model = StreamingTabularDataModel(iter([data]))
+        assert isinstance(streaming_model, StreamingTabularDataProtocol)
+
+        # Test protocol-based duck typing
+        def process_tabular_data(model: TabularDataProtocol) -> list[str]:
+            return model.column_names
+
+        assert process_tabular_data(memory_model) == ["Name", "Age"]
+
+    def test_unicode_data_workflow(self) -> None:
+        """Test processing data with Unicode characters."""
+        data = [
+            ["姓名", "年齢", "都市"],  # Chinese column names
+            ["アリス", "28", "東京"],  # Japanese data
+            ["Боб", "35", "Москва"],  # Cyrillic data
+        ]
+
+        model = TabularDataModel(data)
+        assert model.column_names == ["姓名", "年齢", "都市"]
+        assert model.cell_value("姓名", 0) == "アリス"
+
+    def test_type_inference_complete_workflow(self) -> None:
+        """Test complete type inference workflow."""
+        # Data with various types
+        data = [
+            ["ID", "Name", "Age", "Salary", "Active", "Date"],
+            ["1", "Alice", "28", "75000.50", "true", "2024-01-01"],
+            ["2", "Bob", "35", "82000", "false", "2024-02-15"],
+        ]
+
+        model = TabularDataModel(data)
+        typed = model.to_typed()
+
+        # Verify inferred types
+        assert typed.column_type("ID") == DataType.INTEGER
+        assert typed.column_type("Name") == DataType.STRING
+        assert typed.column_type("Age") == DataType.INTEGER
+        assert typed.column_type("Salary") == DataType.FLOAT
+        assert typed.column_type("Active") == DataType.BOOLEAN
+        # Date is inferred as DATE type
+        assert typed.column_type("Date") == DataType.DATE
+
+    def test_column_access_patterns_workflow(self) -> None:
+        """Test various column access patterns in workflow."""
+        data = [["Name", "Age"], ["Alice", "28"], ["Bob", "35"]]
+        model = TabularDataModel(data)
+
+        # Test column index lookup
+        assert model.column_index("Name") == 0
+        assert model.column_index("Age") == 1
+
+        # Test column values
+        names = model.column_values("Name")
+        assert names == ["Alice", "Bob"]
+
+        # Test cell value
+        assert model.cell_value("Age", 0) == "28"
+
+        # Test row access methods
+        row_dict = model.row(0)
+        assert row_dict == {"Name": "Alice", "Age": "28"}
+
+        row_list = model.row_as_list(0)
+        assert row_list == ["Alice", "28"]
+
+        row_tuple = model.row_as_tuple(0)
+        assert row_tuple == ("Alice", "28")
 
     def test_memory_vs_streaming_model_comparison(self) -> None:
         """Compare memory and streaming models for the same data."""
@@ -213,7 +400,6 @@ Bob,35,Paris"""
                 row[1] = "0"
 
         # Validate and create model
-        validate_data_structure(normalized_rows, expected_type=list)
         ensure_minimum_columns(normalized_rows, 2)
 
         model = TabularDataModel([headers] + normalized_rows)
@@ -415,44 +601,3 @@ class TestErrorRecoveryWorkflows:
         finally:
             for file_path in temp_files:
                 Path(file_path).unlink()
-
-    def test_corrupted_data_handling(self) -> None:
-        """Test handling of corrupted or malformed data."""
-        # Test various corruption scenarios
-        corrupted_scenarios = [
-            # Empty file
-            "",
-            # Headers only
-            "name,age\n",
-            # Missing headers
-            "John,25\nJane,30",
-            # Inconsistent columns
-            "name,age\nJohn,25\nJane",
-        ]
-
-        for corrupted_data in corrupted_scenarios:
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-                f.write(corrupted_data)
-                temp_path = f.name
-
-            try:
-                # Attempt to process corrupted data
-                content = Path(temp_path).read_text()
-
-                if content.strip():  # Not empty
-                    lines = content.strip().split("\n")
-                    if len(lines) > 1:
-                        _headers = lines[0].split(",")
-                        rows = [line.split(",") for line in lines[1:] if line]
-
-                        # This should either succeed or fail gracefully
-                        try:
-                            normalized_rows = normalize_rows(rows, skip_empty_rows=True)
-                            validate_data_structure(normalized_rows, expected_type=list)
-                            # If we get here, data was processable
-                        except SplurgeTabularValidationError:
-                            # Expected for invalid data
-                            pass
-
-            finally:
-                Path(temp_path).unlink()

@@ -10,20 +10,17 @@ This module is licensed under the MIT License.
 from collections.abc import Generator, Iterator
 from typing import Any
 
-from splurge_typer.data_type import DataType
-from splurge_typer.string import String
-from splurge_typer.type_inference import TypeInference
-
-from splurge_tabular.common_utils import safe_dict_access, validate_data_structure
-from splurge_tabular.error_codes import ErrorCode
-from splurge_tabular.exceptions import (
-    SplurgeTabularConfigurationError,
-    SplurgeTabularRowError,
+from ._vendor.splurge_typer.data_type import DataType
+from ._vendor.splurge_typer.string import String
+from ._vendor.splurge_typer.type_inference import TypeInference
+from .exceptions import (
+    SplurgeTabularLookupError,
     SplurgeTabularTypeError,
+    SplurgeTabularValueError,
 )
-from splurge_tabular.protocols import TabularDataProtocol
-from splurge_tabular.tabular_utils import normalize_rows as _normalize_rows
-from splurge_tabular.tabular_utils import process_headers as _process_headers
+from .protocols import TabularDataProtocol
+from .tabular_utils import normalize_rows as _normalize_rows
+from .tabular_utils import process_headers as _process_headers
 
 
 class TabularDataModel(TabularDataProtocol):
@@ -41,8 +38,7 @@ class TabularDataModel(TabularDataProtocol):
         header_rows: int = 1,
         skip_empty_rows: bool = True,
     ) -> None:
-        """
-        Initialize TabularDataModel.
+        """Initialize TabularDataModel.
 
         Args:
             data (list[list[str]]): Raw data rows.
@@ -50,27 +46,32 @@ class TabularDataModel(TabularDataProtocol):
             skip_empty_rows (bool): Skip empty rows in data.
 
         Raises:
-            SplurgeTypeError: If header_rows is not an integer.
-            SplurgeValueError: If header_rows is out of valid range.
+            SplurgeTabularValueError: If data is empty.
+            SplurgeTabularTypeError: If header_rows is not an integer or data is not a list of lists.
+            SplurgeTabularValueError: If header_rows is negative.
         """
-        data = validate_data_structure(data, expected_type=list, param_name="data", allow_empty=False)
+        if not data:
+            raise SplurgeTabularValueError(
+                message="Data cannot be empty",
+                details={"param": "data"},
+            )
 
         if not isinstance(header_rows, int):
-            msg = f"header_rows must be an integer, got {type(header_rows).__name__}"
             raise SplurgeTabularTypeError(
-                msg,
-                details=f"Expected integer, received: {header_rows!r}",
-                error_code=ErrorCode.TYPE_INVALID,
-                context={"param": "header_rows", "value": str(header_rows)},
+                message=f"header_rows must be an integer, got {type(header_rows).__name__}",
+                details={"param": "header_rows", "value": str(header_rows)},
             )
 
         if header_rows < 0:
-            msg = f"header_rows must be >= 0, got {header_rows}"
-            raise SplurgeTabularConfigurationError(
-                msg,
-                details=f"Value {header_rows} is below minimum allowed value 0",
-                error_code=ErrorCode.CONFIG_INVALID,
-                context={"param": "header_rows", "value": str(header_rows)},
+            raise SplurgeTabularValueError(
+                message=f"header_rows must be >= 0, got {header_rows}",
+                details={"param": "header_rows", "value": str(header_rows)},
+            )
+
+        if not isinstance(data, list) or not all(isinstance(row, list) for row in data):
+            raise SplurgeTabularTypeError(
+                message="Data must be a list of lists",
+                details={"param": "data", "value": str(data)},
             )
 
         self._raw_data = data
@@ -102,7 +103,7 @@ class TabularDataModel(TabularDataProtocol):
         """Get the list of column names.
 
         Returns:
-            List of column names in order.
+            list[str]: List of column names in order.
         """
         return self._column_names
 
@@ -110,26 +111,28 @@ class TabularDataModel(TabularDataProtocol):
         self,
         name: str,
     ) -> int:
-        """
-        Get the column index for a given name.
+        """Get the column index for a given name.
 
         Args:
             name (str): Column name.
 
         Returns:
-            int: Column index.
+            int: Zero-based column index.
 
         Raises:
-            SplurgeColumnError: If column name is not found.
+            SplurgeTabularLookupError: If column name is not found.
         """
-        return safe_dict_access(self._column_index_map, name, item_name="column")
+
+        if name not in self._column_names:
+            raise SplurgeTabularLookupError(message=f"Column name '{name}' not found", details={"column": name})
+        return self._column_index_map[name]
 
     @property
     def row_count(self) -> int:
         """Get the number of data rows.
 
         Returns:
-            Number of rows in the dataset.
+            int: Number of rows in the dataset.
         """
         return self._row_count
 
@@ -138,7 +141,7 @@ class TabularDataModel(TabularDataProtocol):
         """Get the number of columns.
 
         Returns:
-            Number of columns in the dataset.
+            int: Number of columns in the dataset.
         """
         return self._column_count
 
@@ -149,17 +152,16 @@ class TabularDataModel(TabularDataProtocol):
         """Get the inferred data type for a column (cached).
 
         Args:
-            name: Column name.
+            name (str): Column name.
 
         Returns:
-            Inferred data type for the column.
+            DataType: Inferred data type for the column.
 
         Raises:
-            SplurgeColumnError: If column name is not found.
+            SplurgeTabularLookupError: If column name is not found.
         """
-        safe_dict_access(self._column_index_map, name, item_name="column")
+        col_idx: int = self.column_index(name)
         if name not in self._column_types:
-            col_idx: int = self._column_index_map[name]
             values: list[str] = [row[col_idx] for row in self._data]
             self._column_types[name] = TypeInference.profile_values(values)
         return self._column_types[name]
@@ -171,16 +173,15 @@ class TabularDataModel(TabularDataProtocol):
         """Get all values for a column.
 
         Args:
-            name: Column name.
+            name (str): Column name.
 
         Returns:
-            List of all values in the column.
+            list[str]: List of all values in the column.
 
         Raises:
-            SplurgeColumnError: If column name is not found.
+            SplurgeTabularLookupError: If column name is not found.
         """
-        safe_dict_access(self._column_index_map, name, item_name="column")
-        col_idx: int = self._column_index_map[name]
+        col_idx: int = self.column_index(name)
         return [row[col_idx] for row in self._data]
 
     def cell_value(
@@ -199,46 +200,39 @@ class TabularDataModel(TabularDataProtocol):
             str: Cell value.
 
         Raises:
-            SplurgeTabularColumnError: If column name is not found.
-            SplurgeTabularKeyError: If column name is not found.
-            SplurgeTabularRowError: If row index is out of range.
+            SplurgeTabularLookupError: If column name is not found.
+            SplurgeTabularLookupError: If row index is out of range.
         """
-        safe_dict_access(self._column_index_map, name, item_name="column")
-        if row_index < 0 or row_index >= self._row_count:
-            msg = f"Row index {row_index} out of range"
-            raise SplurgeTabularRowError(
-                msg,
-                details=f"Valid range: 0 to {self._row_count - 1}",
-                error_code=ErrorCode.ROW_OUT_OF_RANGE,
-                context={"requested_index": str(row_index), "max_index": str(max(0, self._row_count - 1))},
+        col_idx: int = self.column_index(name)
+        if row_index < 0 or row_index >= self.row_count:
+            raise SplurgeTabularLookupError(
+                message=f"Row index {row_index} out of range",
+                details={"index": str(row_index), "max_index": str(self.row_count - 1)},
             )
-        col_idx: int = self._column_index_map[name]
         return self._data[row_index][col_idx]
 
     def __iter__(self) -> Iterator[list[str]]:
         """Iterate over raw rows in the underlying data.
 
         Yields:
-            Iterator[list[str]]: Iterator over rows as lists of strings.
+            list[str]: Rows as lists of strings.
         """
         return iter(self._data)
 
     def iter_rows(self) -> Generator[dict[str, str], None, None]:
-        """
-        Iterate over rows as dictionaries.
+        """Iterate over rows as dictionaries.
 
         Yields:
-            dict[str, str]: Row as a dictionary.
+            dict[str, str]: Rows as dictionaries with column names as keys.
         """
         for row in self._data:
             yield dict(zip(self._column_names, row, strict=False))
 
     def iter_rows_as_tuples(self) -> Generator[tuple[str, ...], None, None]:
-        """
-        Iterate over rows as tuples.
+        """Iterate over rows as tuples.
 
         Yields:
-            tuple[str, ...]: Row as a tuple.
+            tuple[str, ...]: Rows as tuples of values.
         """
         for row in self._data:
             yield tuple(row)
@@ -250,11 +244,19 @@ class TabularDataModel(TabularDataProtocol):
         """Get a row as a dictionary.
 
         Args:
-            index: Zero-based row index.
+            index (int): Zero-based row index.
 
         Returns:
-            Row data as a dictionary with column names as keys.
+            dict[str, str]: Row data as a dictionary with column names as keys.
+
+        Raises:
+            SplurgeTabularLookupError: If row index is out of range.
         """
+        if index < 0 or index >= self.row_count:
+            raise SplurgeTabularLookupError(
+                message=f"Row index {index} out of range",
+                details={"index": str(index), "max_index": str(self.row_count - 1)},
+            )
         row_data = self._data[index]
         # Ensure row_data is properly padded to match column count
         padded_row = row_data + [""] * (self._column_count - len(row_data))
@@ -264,30 +266,44 @@ class TabularDataModel(TabularDataProtocol):
         self,
         index: int,
     ) -> list[str]:
-        """
-        Get a row as a list.
+        """Get a row as a list.
 
         Args:
-            index (int): Row index (0-based).
+            index (int): Zero-based row index.
 
         Returns:
             list[str]: Row as a list.
+
+        Raises:
+            SplurgeTabularLookupError: If row index is out of range.
         """
+        if index < 0 or index >= self.row_count:
+            raise SplurgeTabularLookupError(
+                message=f"Row index {index} out of range",
+                details={"index": str(index), "max_index": str(self.row_count - 1)},
+            )
         return self._data[index]
 
     def row_as_tuple(
         self,
         index: int,
     ) -> tuple[str, ...]:
-        """
-        Get a row as a tuple.
+        """Get a row as a tuple.
 
         Args:
-            index (int): Row index (0-based).
+            index (int): Zero-based row index.
 
         Returns:
             tuple[str, ...]: Row as a tuple.
+
+        Raises:
+            SplurgeTabularLookupError: If row index is out of range.
         """
+        if index < 0 or index >= self.row_count:
+            raise SplurgeTabularLookupError(
+                message=f"Row index {index} out of range",
+                details={"index": str(index), "max_index": str(self.row_count - 1)},
+            )
         return tuple(self._data[index])
 
     def to_typed(
@@ -298,10 +314,10 @@ class TabularDataModel(TabularDataProtocol):
         """Return a typed view over this model.
 
         Args:
-            type_configs: Optional overrides for default type conversion behavior.
+            type_configs (dict[DataType, Any] | None): Optional overrides for default type conversion behavior.
 
         Returns:
-            _TypedView: A lightweight wrapper that provides typed access.
+            _TypedView: A lightweight wrapper that provides typed access to the model.
         """
         return _TypedView(self, type_configs=type_configs)
 
@@ -310,15 +326,14 @@ class TabularDataModel(TabularDataProtocol):
         rows: list[list[str]],
         skip_empty_rows: bool = True,
     ) -> list[list[str]]:
-        """
-        Normalize the data model (pad rows, optionally skip empty rows).
+        """Normalize the data model (pad rows, optionally skip empty rows).
 
         Args:
             rows (list[list[str]]): Data rows.
             skip_empty_rows (bool): Skip empty rows if True.
 
         Returns:
-            list[list[str]]: Normalized data rows.
+            list[list[str]]: Normalized data rows with equal length.
         """
         return _normalize_rows(rows, skip_empty_rows=skip_empty_rows)
 
@@ -341,7 +356,7 @@ class _TypedView:
             model: The tabular data model to wrap.
             type_configs: Optional type-specific configuration overrides.
         """
-        from splurge_typer.string import String  # local import to avoid cycles
+        from ._vendor.splurge_typer.string import String  # local import to avoid cycles
 
         self._model = model
         self._string = String
@@ -374,35 +389,50 @@ class _TypedView:
 
     @property
     def column_names(self) -> list[str]:
-        """Get the list of column names."""
+        """Get the list of column names.
+
+        Returns:
+            list[str]: List of column names in order.
+        """
         return self._model.column_names
 
     @property
     def row_count(self) -> int:
-        """Get the number of data rows."""
+        """Get the number of data rows.
+
+        Returns:
+            int: Number of rows in the dataset.
+        """
         return self._model.row_count
 
     @property
     def column_count(self) -> int:
-        """Get the number of columns."""
+        """Get the number of columns.
+
+        Returns:
+            int: Number of columns in the dataset.
+        """
         return self._model.column_count
 
     def column_index(self, name: str) -> int:
         """Get the index of a column by name.
 
         Args:
-            name: Column name.
+            name (str): Column name.
 
         Returns:
-            Zero-based index of the column.
+            int: Zero-based index of the column.
+
+        Raises:
+            SplurgeTabularLookupError: If column name is not found.
         """
         return self._model.column_index(name)
 
     def __iter__(self) -> Iterator[list[object]]:
         """Iterate over rows as lists with type conversion.
 
-        Returns:
-            Iterator yielding rows as lists of converted values.
+        Yields:
+            list[object]: Rows as lists of converted values.
         """
         for row in self._model:
             yield [self._convert(value, self._inferred_type(i)) for i, value in enumerate(row)]
@@ -410,8 +440,8 @@ class _TypedView:
     def iter_rows(self) -> Generator[dict[str, object], None, None]:
         """Iterate over rows as dictionaries with type conversion.
 
-        Returns:
-            Generator yielding rows as dictionaries with column names as keys.
+        Yields:
+            dict[str, object]: Rows as dictionaries with column names as keys.
         """
         for row in self:
             yield dict(zip(self.column_names, row, strict=False))
@@ -419,8 +449,8 @@ class _TypedView:
     def iter_rows_as_tuples(self) -> Generator[tuple[object, ...], None, None]:
         """Iterate over rows as tuples with type conversion.
 
-        Returns:
-            Generator yielding rows as tuples of converted values.
+        Yields:
+            tuple[object, ...]: Rows as tuples of converted values.
         """
         for row in self:
             yield tuple(row)
@@ -429,13 +459,13 @@ class _TypedView:
         """Get all values for a column with type conversion.
 
         Args:
-            name: Column name.
+            name (str): Column name.
 
         Returns:
-            List of converted values.
+            list[object]: List of converted values.
 
         Raises:
-            SplurgeColumnError: If column name is not found.
+            SplurgeTabularLookupError: If column name is not found.
         """
         col_idx = self._model.column_index(name)
         dtype = self._inferred_type(col_idx)
@@ -445,16 +475,15 @@ class _TypedView:
         """Get a specific cell value with type conversion.
 
         Args:
-            name: Column name.
-            row_index: Zero-based row index.
+            name (str): Column name.
+            row_index (int): Zero-based row index.
 
         Returns:
-            Converted cell value.
+            object: Converted cell value.
 
         Raises:
-            SplurgeTabularColumnError: If column name is not found.
-            SplurgeTabularKeyError: If column name is not found.
-            SplurgeTabularRowError: If row index is out of range.
+            SplurgeTabularLookupError: If column name is not found.
+            SplurgeTabularLookupError: If row index is out of range.
         """
         col_idx = self._model.column_index(name)
         dtype = self._inferred_type(col_idx)
@@ -465,10 +494,13 @@ class _TypedView:
         """Get a typed row as a dictionary.
 
         Args:
-            index: Zero-based row index.
+            index (int): Zero-based row index.
 
         Returns:
-            Row data as a dictionary with column names as keys and typed values.
+            dict[str, object]: Row data as a dictionary with column names as keys and typed values.
+
+        Raises:
+            SplurgeTabularLookupError: If row index is out of range.
         """
         typed_list = self.row_as_list(index)
         return {self.column_names[i]: typed_list[i] for i in range(self.column_count)}
@@ -477,17 +509,19 @@ class _TypedView:
         """Get a typed row as a list.
 
         Args:
-            index: Zero-based row index.
+            index (int): Zero-based row index.
 
         Returns:
-            Row data as a list of typed values.
+            list[object]: Row data as a list of typed values.
 
         Raises:
-            SplurgeTabularRowError: If row index is out of range.
+            SplurgeTabularLookupError: If row index is out of range.
         """
         if index < 0 or index >= self._model.row_count:
-            msg = f"Row index {index} out of range"
-            raise SplurgeTabularRowError(msg)
+            raise SplurgeTabularLookupError(
+                message=f"Row index {index} out of range",
+                details={"index": str(index), "max_index": str(self._model.row_count - 1)},
+            )
         raw = self._model.row_as_list(index)
         return [self._convert(val, self._inferred_type(i)) for i, val in enumerate(raw)]
 
@@ -495,10 +529,13 @@ class _TypedView:
         """Get a typed row as a tuple.
 
         Args:
-            index: Zero-based row index.
+            index (int): Zero-based row index.
 
         Returns:
-            Row data as a tuple of typed values.
+            tuple[object, ...]: Row data as a tuple of typed values.
+
+        Raises:
+            SplurgeTabularLookupError: If row index is out of range.
         """
         return tuple(self.row_as_list(index))
 
@@ -509,7 +546,7 @@ class _TypedView:
         index to the column name and returns the column's inferred type.
 
         Args:
-            col_index: Zero-based column index.
+            col_index (int): Zero-based column index.
 
         Returns:
             DataType: Inferred data type for the specified column.
@@ -525,13 +562,13 @@ class _TypedView:
         the configured defaults for each DataType.
 
         Args:
-            value: Raw string value from the dataset.
-            dtype: The DataType to convert to.
+            value (str): Raw string value from the dataset.
+            dtype (DataType): The DataType to convert to.
 
         Returns:
-            Converted Python value (type depends on `dtype`).
+            object: Converted Python value (type depends on `dtype`).
         """
-        from splurge_typer.string import String
+        from ._vendor.splurge_typer.string import String
 
         defaults = self._type_defaults.get(dtype, {"empty": None, "none": None})
         empty_default = defaults["empty"]
@@ -570,10 +607,13 @@ class _TypedView:
         over-classifying as MIXED when strong signals exist in non-empty values.
 
         Args:
-            name: Column name.
+            name (str): Column name.
 
         Returns:
-            Inferred DataType for the specified column.
+            DataType: Inferred DataType for the specified column.
+
+        Raises:
+            SplurgeTabularLookupError: If column name is not found.
         """
 
         # Lazy cache on the wrapper to avoid recomputation

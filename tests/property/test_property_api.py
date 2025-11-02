@@ -1,21 +1,11 @@
 from __future__ import annotations
 
-from typing import Any
-
-import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
 from splurge_tabular.common_utils import (
     ensure_minimum_columns,
-    safe_dict_access,
-    safe_index_access,
     standardize_column_names,
-)
-from splurge_tabular.exceptions import (
-    SplurgeTabularColumnError,
-    SplurgeTabularIndexError,
-    SplurgeTabularKeyError,
 )
 from splurge_tabular.tabular_data_model import TabularDataModel
 
@@ -47,41 +37,6 @@ def test_ensure_minimum_columns_pads_correctly(row: list[str], min_columns: int,
     # padding uses fill_value
     if len(row) < min_columns:
         assert all(x == fill_value for x in padded[len(row) :])
-
-
-@given(
-    items=st.lists(st.integers(), min_size=0, max_size=6),
-    index=st.integers(min_value=-5, max_value=10),
-    default=st.one_of(st.none(), st.integers()),
-)
-def test_safe_index_access_behaviour(items: list[int], index: int, default: Any):
-    if 0 <= index < len(items):
-        assert safe_index_access(items, index, default=default) == items[index]
-    else:
-        if default is not None:
-            assert safe_index_access(items, index, default=default) == default
-        else:
-            with pytest.raises(SplurgeTabularIndexError):
-                safe_index_access(items, index)
-
-
-@given(
-    keys=st.lists(st.text(min_size=1, max_size=6), min_size=0, max_size=6, unique=True),
-    lookup=st.text(min_size=0, max_size=6),
-)
-def test_safe_dict_access_behaviour(keys: list[str], lookup: str):
-    d = {k: f"v:{k}" for k in keys}
-    if lookup in d:
-        assert safe_dict_access(d, lookup) == d[lookup]
-        assert safe_dict_access(d, lookup, default="x") == d[lookup]
-    else:
-        # default should be returned if provided
-        assert safe_dict_access(d, lookup, default="x") == "x"
-        # missing without default raises appropriate error depending on item_name
-        with pytest.raises(SplurgeTabularColumnError):
-            safe_dict_access(d, lookup, item_name="column")
-        with pytest.raises(SplurgeTabularKeyError):
-            safe_dict_access(d, lookup, item_name="key")
 
 
 @given(

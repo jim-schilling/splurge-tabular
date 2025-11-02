@@ -29,7 +29,7 @@ def process_headers(
     Returns:
         tuple[list[list[str]], list[str]]: A tuple of (processed_header_data, column_names).
     """
-    processed_header_data = header_data.copy()
+    processed_header_data = list(header_data)
 
     if header_rows > 1:
         merged_headers: list[str] = []

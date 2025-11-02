@@ -242,7 +242,7 @@ class TestStreamingTabularDataModel:
             StreamingTabularDataModel(dummy_stream(), header_rows=-1)
 
         # Test small chunk_size
-        with pytest.raises(SplurgeTabularValueError, match="chunk_size must be at least 100"):
+        with pytest.raises(SplurgeTabularValueError, match="Chunk size must be at least"):
             StreamingTabularDataModel(dummy_stream(), chunk_size=50)
 
     def test_empty_stream_handling(self):
